@@ -258,12 +258,12 @@
 
 <main>
   <section class="panel">
-    <h2 class="section-title">1 · Carica il PDF</h2>
+    <h2 class="section-title">1 · Carica i PDF</h2>
     <label class="drop" id="drop">
-      <input type="file" id="fileInput" accept="application/pdf">
+      <input type="file" id="fileInput" accept="application/pdf" multiple>
       <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div><b>Trascina qui il PDF</b> o clicca per selezionarlo</div>
-      <div class="sub">Report Segnalazioni Capi Turno · un solo file .pdf</div>
+      <div><b>Trascina qui uno o più PDF</b> o clicca per selezionarli</div>
+      <div class="sub">Report Segnalazioni Capi Turno · es. sabato + domenica</div>
     </label>
     <div class="filename" id="filename"></div>
     <div class="status" id="status"><span class="dot"></span><span id="statusText"></span></div>
@@ -274,7 +274,7 @@
     <div class="meta-row" id="metaRow"></div>
     <div class="actions">
       <button class="btn-accent" id="downloadBtn">Scarica di nuovo il PDF</button>
-      <button class="btn-ghost" id="resetBtn">Carica un altro file</button>
+      <button class="btn-ghost" id="resetBtn">Carica altri file</button>
     </div>
   </section>
 </main>
@@ -303,7 +303,7 @@ const metaRow = document.getElementById('metaRow');
 const downloadBtn = document.getElementById('downloadBtn');
 const resetBtn = document.getElementById('resetBtn');
 
-let lastResult = null; // parsed data kept for PDF generation
+let lastResults = null; // array of parsed reports (sorted by date) kept for PDF generation
 
 ['dragover','dragenter'].forEach(evt=>{
   dropEl.addEventListener(evt, e=>{ e.preventDefault(); dropEl.classList.add('drag'); });
@@ -312,12 +312,12 @@ let lastResult = null; // parsed data kept for PDF generation
   dropEl.addEventListener(evt, e=>{ e.preventDefault(); dropEl.classList.remove('drag'); });
 });
 dropEl.addEventListener('drop', e=>{
-  const f = e.dataTransfer.files[0];
-  if(f) handleFile(f);
+  const files = Array.from(e.dataTransfer.files);
+  if(files.length) handleFiles(files);
 });
 fileInput.addEventListener('change', e=>{
-  const f = e.target.files[0];
-  if(f) handleFile(f);
+  const files = Array.from(e.target.files);
+  if(files.length) handleFiles(files);
 });
 resetBtn.addEventListener('click', ()=>{
   fileInput.value = '';
@@ -334,32 +334,56 @@ function setStatus(text, mode){
   statusText.textContent = text;
 }
 
-async function handleFile(file){
-  if(file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')){
-    setStatus('Il file selezionato non è un PDF.', 'error');
+const MONTHS_IT = {gennaio:0,febbraio:1,marzo:2,aprile:3,maggio:4,giugno:5,luglio:6,agosto:7,settembre:8,ottobre:9,novembre:10,dicembre:11};
+function parseItDate(s){
+  if(!s) return NaN;
+  const m = s.toLowerCase().match(/(\d{1,2})\s+([a-zà-ù]+)\s+(\d{4})/);
+  if(!m) return NaN;
+  const month = MONTHS_IT[m[2]];
+  if(month === undefined) return NaN;
+  return new Date(parseInt(m[3],10), month, parseInt(m[1],10)).getTime();
+}
+
+async function handleFiles(files){
+  const pdfs = files.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(pdfs.length === 0){
+    setStatus('Nessun PDF tra i file selezionati.', 'error');
     return;
   }
-  filenameEl.textContent = file.name;
+  filenameEl.textContent = pdfs.map(f=>f.name).join('  ·  ');
   filenameEl.style.display='block';
   previewPanel.classList.add('hidden');
-  setStatus('Lettura del PDF in corso…');
+  setStatus(pdfs.length === 1 ? 'Lettura del PDF in corso…' : `Lettura di ${pdfs.length} PDF in corso…`);
   try{
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({data: buf}).promise;
-    const lines = await extractLines(pdf);
-    const parsed = parseReport(lines);
-    if(!hasAnyData(parsed)){
-      setStatus('Non sono riuscito a riconoscere la struttura del report in questo PDF.', 'error');
-      return;
+    const results = [];
+    for(const file of pdfs){
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+      const lines = await extractLines(pdf);
+      const parsed = parseReport(lines);
+      if(!hasAnyData(parsed)){
+        setStatus(`Struttura del report non riconosciuta nel file "${file.name}".`, 'error');
+        return;
+      }
+      parsed.fileName = file.name;
+      results.push(parsed);
     }
-    lastResult = parsed;
-    renderMeta(parsed);
-    generatePdf(parsed);
+    // ordina cronologicamente (sabato prima di domenica)
+    results.sort((a,b)=>{
+      const da = parseItDate(a.reportDate), db = parseItDate(b.reportDate);
+      if(isNaN(da) && isNaN(db)) return 0;
+      if(isNaN(da)) return 1;
+      if(isNaN(db)) return -1;
+      return da - db;
+    });
+    lastResults = results;
+    renderMeta(results);
+    generatePdf(results);
     setStatus('Report riordinato: il download del PDF è partito.', 'done');
     previewPanel.classList.remove('hidden');
   }catch(err){
     console.error(err);
-    setStatus('Errore durante la lettura del PDF: ' + err.message, 'error');
+    setStatus('Errore durante la lettura dei PDF: ' + err.message, 'error');
   }
 }
 
@@ -526,20 +550,19 @@ function escapeHtml(s){
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function renderMeta(parsed){
-  metaRow.innerHTML = `
-    <div><span>Data</span><b>${escapeHtml(parsed.reportDate || '—')}</b></div>
-    ${[1,2,3].map(n => parsed.turnoCapoMap[n] ? `<div><span>Capo Turno ${n}</span><b>${escapeHtml(parsed.turnoCapoMap[n])}</b></div>` : '').join('')}
-  `;
+function renderMeta(results){
+  metaRow.innerHTML = results.map((r, i)=>`
+    <div><span>Report ${i+1}</span><b>${escapeHtml(r.reportDate || r.fileName || '—')}</b></div>
+  `).join('');
 }
 
 // ---------- PDF GENERATION ----------
 downloadBtn.addEventListener('click', ()=>{
-  if(!lastResult) return;
-  generatePdf(lastResult);
+  if(!lastResults) return;
+  generatePdf(lastResults);
 });
 
-function generatePdf(parsed){
+function generatePdf(results){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({unit:'pt', format:'a4'});
   const pageW = doc.internal.pageSize.getWidth();
@@ -558,6 +581,26 @@ function generatePdf(parsed){
     line: [199,212,230],
     white: [255,255,255]
   };
+
+  const multiDay = results.length > 1;
+
+  function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+  // Unione dell'ordine delle macro-aree (canoniche prima, poi le extra nell'ordine di comparsa)
+  const macroOrderUnion = [];
+  MACRO_ORDER.forEach(m => macroOrderUnion.push(m));
+  results.forEach(r => r.macroOrder.forEach(m => { if(!macroOrderUnion.includes(m)) macroOrderUnion.push(m); }));
+
+  // Unione dell'ordine delle aree per ciascuna macro (ordine di prima comparsa tra i report, in ordine di data)
+  function areaOrderUnion(macro){
+    const out = [];
+    results.forEach(r=>{
+      const md = r.macroData[macro];
+      if(!md) return;
+      md.areaOrder.forEach(a => { if(!out.includes(a)) out.push(a); });
+    });
+    return out;
+  }
 
   function newPage(){
     doc.addPage();
@@ -591,21 +634,26 @@ function generatePdf(parsed){
   doc.line(marginX, y, pageW-marginX, y);
   y += 20;
 
-  doc.setFont('helvetica','normal');
+  // Riepilogo date e capi turno, un rigo per report
   doc.setFontSize(10.5);
-  doc.setTextColor(...COL.inkSoft);
-  const dateLabel = 'Data: ' + (parsed.reportDate || '—');
-  doc.text(dateLabel, marginX, y);
-  const capoParts = [1,2,3].filter(n=>parsed.turnoCapoMap[n]).map(n=>`Turno ${n}: ${parsed.turnoCapoMap[n]}`);
-  if(capoParts.length){
-    doc.text('Capi Turno — ' + capoParts.join('   ·   '), marginX, y+15);
+  results.forEach(r=>{
+    const capoParts = [1,2,3].filter(n=>r.turnoCapoMap[n]).map(n=>`T${n}: ${r.turnoCapoMap[n]}`);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(...COL.deep);
+    const dateLabel = capitalize(r.reportDate || r.fileName || '—');
+    doc.text(dateLabel, marginX, y);
+    if(capoParts.length){
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(...COL.inkSoft);
+      doc.text('— ' + capoParts.join('   ·   '), marginX + doc.getTextWidth(dateLabel) + 6, y);
+    }
     y += 15;
-  }
-  y += 24;
+  });
+  y += 14;
 
-  parsed.macroOrder.forEach(macro=>{
-    const md = parsed.macroData[macro];
-    if(!md || md.areaOrder.length===0) return;
+  macroOrderUnion.forEach(macro=>{
+    const areas = areaOrderUnion(macro);
+    if(areas.length===0) return;
 
     ensureSpace(30);
     doc.setFillColor(...COL.deep);
@@ -616,8 +664,13 @@ function generatePdf(parsed){
     doc.text(macro, marginX+10, y+1);
     y += 30;
 
-    md.areaOrder.forEach(areaName=>{
-      const areaData = md.areas[areaName];
+    areas.forEach(areaName=>{
+      // report che hanno contenuto per quest'area
+      const dayEntries = results
+        .map(r => ({r, areaData: r.macroData[macro] && r.macroData[macro].areas[areaName]}))
+        .filter(e => e.areaData && [1,2,3].some(t => e.areaData[t] && e.areaData[t].length));
+      if(dayEntries.length===0) return;
+
       ensureSpace(20);
       doc.setFont('helvetica','bold');
       doc.setFontSize(11);
@@ -628,67 +681,80 @@ function generatePdf(parsed){
       doc.setLineWidth(0.6);
       doc.line(marginX, y-9, pageW-marginX, y-9);
 
-      [1,2,3].forEach(turno=>{
-        const blocks = areaData[turno];
-        if(!blocks || blocks.length===0) return;
-        const capo = parsed.turnoCapoMap[turno] || '';
-
-        ensureSpace(18);
-        doc.setFont('helvetica','bold');
-        doc.setFontSize(10);
-        doc.setTextColor(...COL.mid);
-        doc.text('TURNO ' + turno, marginX+8, y);
-        if(capo){
-          doc.setFont('helvetica','normal');
-          doc.setTextColor(...COL.inkSoft);
-          doc.text('— Capo Turno: ' + capo, marginX+8+doc.getTextWidth('TURNO ' + turno)+6, y);
+      dayEntries.forEach(({r, areaData})=>{
+        // intestazione del giorno (solo se sono caricati più report)
+        if(multiDay){
+          ensureSpace(16);
+          doc.setFont('helvetica','bold');
+          doc.setFontSize(10.5);
+          doc.setTextColor(...COL.deep);
+          doc.text(capitalize(r.reportDate || r.fileName || '—'), marginX+4, y);
+          y += 14;
         }
-        y += 13;
 
-        blocks.forEach(b=>{
-          if(b.divider){
-            ensureSpace(14);
-            doc.setDrawColor(...COL.line);
-            doc.setLineWidth(0.8);
-            doc.line(marginX+16, y-2, pageW-marginX-16, y-2);
-            y += 12;
-            return;
+        [1,2,3].forEach(turno=>{
+          const blocks = areaData[turno];
+          if(!blocks || blocks.length===0) return;
+          const capo = r.turnoCapoMap[turno] || '';
+
+          ensureSpace(18);
+          doc.setFont('helvetica','bold');
+          doc.setFontSize(10);
+          doc.setTextColor(...COL.mid);
+          doc.text('TURNO ' + turno, marginX+8, y);
+          if(capo){
+            doc.setFont('helvetica','normal');
+            doc.setTextColor(...COL.inkSoft);
+            doc.text('— Capo Turno: ' + capo, marginX+8+doc.getTextWidth('TURNO ' + turno)+6, y);
           }
-          if(b.sameTagContinuation){
-            ensureSpace(12);
-            doc.setDrawColor(...COL.line);
-            doc.setLineWidth(0.6);
-            doc.line(marginX+16, y-6, pageW-marginX-16, y-6);
-            y += 6;
-          }
-          doc.setFont('helvetica','normal');
-          doc.setFontSize(9.6);
-          doc.setTextColor(...COL.ink);
-          let prefix = '';
-          if(b.tag){
-            prefix = '[' + b.tag + ']  ';
-          }
-          const wrapped = doc.splitTextToSize(prefix + b.text, maxW - 16);
-          const blockH = wrapped.length * 12.2 + 6;
-          ensureSpace(blockH);
-          wrapped.forEach((ln, idx)=>{
-            if(idx===0 && b.tag){
-              const tagStr = '[' + b.tag + ']';
-              doc.setFont('helvetica','bold');
-              doc.setTextColor(...COL.red);
-              doc.text(tagStr, marginX+16, y);
-              const tagW = doc.getTextWidth(tagStr+' ');
-              doc.setFont('helvetica','normal');
-              doc.setTextColor(...COL.ink);
-              doc.text(ln.slice(tagStr.length+1), marginX+16+tagW, y);
-            } else {
-              doc.text(ln, marginX+16, y);
+          y += 13;
+
+          blocks.forEach(b=>{
+            if(b.divider){
+              ensureSpace(14);
+              doc.setDrawColor(...COL.line);
+              doc.setLineWidth(0.8);
+              doc.line(marginX+16, y-2, pageW-marginX-16, y-2);
+              y += 12;
+              return;
             }
-            y += 12.2;
+            if(b.sameTagContinuation){
+              ensureSpace(12);
+              doc.setDrawColor(...COL.line);
+              doc.setLineWidth(0.6);
+              doc.line(marginX+16, y-6, pageW-marginX-16, y-6);
+              y += 6;
+            }
+            doc.setFont('helvetica','normal');
+            doc.setFontSize(9.6);
+            doc.setTextColor(...COL.ink);
+            let prefix = '';
+            if(b.tag){
+              prefix = '[' + b.tag + ']  ';
+            }
+            const wrapped = doc.splitTextToSize(prefix + b.text, maxW - 16);
+            const blockH = wrapped.length * 12.2 + 6;
+            ensureSpace(blockH);
+            wrapped.forEach((ln, idx)=>{
+              if(idx===0 && b.tag){
+                const tagStr = '[' + b.tag + ']';
+                doc.setFont('helvetica','bold');
+                doc.setTextColor(...COL.red);
+                doc.text(tagStr, marginX+16, y);
+                const tagW = doc.getTextWidth(tagStr+' ');
+                doc.setFont('helvetica','normal');
+                doc.setTextColor(...COL.ink);
+                doc.text(ln.slice(tagStr.length+1), marginX+16+tagW, y);
+              } else {
+                doc.text(ln, marginX+16, y);
+              }
+              y += 12.2;
+            });
+            y += 4;
           });
           y += 4;
         });
-        y += 4;
+        y += multiDay ? 6 : 0;
       });
       y += 10;
     });
@@ -703,11 +769,11 @@ function generatePdf(parsed){
     doc.setFontSize(8.5);
     doc.setTextColor(...COL.inkSoft);
     doc.text(`Pagina ${i} di ${pageCount}`, pageW-marginX, pageH-24, {align:'right'});
-    doc.text('Riordinato automaticamente dal report originale', marginX, pageH-24);
+    doc.text(multiDay ? 'Riordinato automaticamente dai report originali' : 'Riordinato automaticamente dal report originale', marginX, pageH-24);
   }
 
-  const safeDate = (parsed.reportDate||'report').replace(/\s+/g,'_');
-  doc.save(`Report_per_Area_${safeDate}.pdf`);
+  const safeDates = results.map(r => (r.reportDate||'report').replace(/\s+/g,'_')).join('__');
+  doc.save(`Report_per_Area_${safeDates}.pdf`);
 }
 </script>
 </body>
