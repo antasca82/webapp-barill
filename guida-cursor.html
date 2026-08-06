@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Guida completa in italiano a Cursor IDE: dalle basi alle funzionalità avanzate, Agent, regole, MCP, Cloud Agents e CLI.">
+  <title>Guida completa a Cursor IDE — Dalla A alla Z</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg-elevated: #161b22;
+      --bg-card: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-soft: rgba(88, 166, 255, 0.12);
+      --green: #3fb950;
+      --orange: #d29922;
+      --red: #f85149;
+      --purple: #a371f7;
+      --toc-width: 280px;
+      --header-h: 56px;
+      --radius: 10px;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(var(--header-h) + 1rem);
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--accent);
+      color: #000;
+      padding: 0.5rem 1rem;
+      z-index: 10000;
+    }
+    .skip-link:focus { left: 1rem; top: 1rem; }
+
+    header.site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.25rem;
+      background: rgba(15, 17, 23, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    header.site-header h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    header.site-header a.brand {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .header-actions a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: var(--toc-width) 1fr;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      nav.toc { display: none; }
+      nav.toc.mobile-open {
+        display: block;
+        position: fixed;
+        inset: var(--header-h) 0 0 0;
+        z-index: 99;
+        overflow: auto;
+        background: var(--bg-elevated);
+        padding: 1rem;
+      }
+    }
+
+    nav.toc {
+      position: sticky;
+      top: var(--header-h);
+      height: calc(100vh - var(--header-h));
+      overflow-y: auto;
+      padding: 1rem 0.75rem 2rem;
+      border-right: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+
+    nav.toc .toc-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin: 0 0.5rem 0.75rem;
+      font-weight: 600;
+    }
+
+    #toc-search {
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 0.8125rem;
+    }
+
+    nav.toc ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav.toc li { margin: 0.15rem 0; }
+
+    nav.toc a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-radius: 6px;
+      border-left: 2px solid transparent;
+    }
+
+    nav.toc a:hover,
+    nav.toc a:focus {
+      color: var(--text);
+      background: var(--accent-soft);
+    }
+
+    nav.toc a.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    nav.toc .toc-sub a { padding-left: 1.25rem; font-size: 0.75rem; }
+
+    main {
+      padding: 2rem 2.5rem 4rem;
+      max-width: 52rem;
+    }
+
+    @media (max-width: 640px) {
+      main { padding: 1.25rem 1rem 3rem; }
+    }
+
+    .hero {
+      margin-bottom: 2.5rem;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .hero img {
+      width: 100%;
+      height: auto;
+      display: block;
+      max-height: 220px;
+      object-fit: cover;
+    }
+
+    .hero-text {
+      padding: 1.5rem 1.75rem;
+      background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+    }
+
+    .hero-text h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.75rem;
+      line-height: 1.25;
+    }
+
+    .hero-text p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    .meta-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .badge-blue { background: var(--accent-soft); color: var(--accent); }
+    .badge-green { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+
+    section {
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section:last-of-type { border-bottom: none; }
+
+    h2 {
+      font-size: 1.5rem;
+      margin: 0 0 1rem;
+      scroll-margin-top: calc(var(--header-h) + 1rem);
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      margin: 1.75rem 0 0.75rem;
+      color: var(--text);
+    }
+
+    h4 {
+      font-size: 1rem;
+      margin: 1.25rem 0 0.5rem;
+      color: var(--text-muted);
+    }
+
+    p { margin: 0 0 1rem; }
+
+    ul, ol {
+      margin: 0 0 1rem;
+      padding-left: 1.35rem;
+    }
+
+    li { margin-bottom: 0.35rem; }
+
+    a { color: var(--accent); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--bg-card);
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.88em;
+      background: var(--bg-card);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    pre {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    .callout {
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+      margin: 1.25rem 0;
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .callout.warning {
+      border-left-color: var(--orange);
+      background: rgba(210, 153, 34, 0.1);
+    }
+
+    .callout.danger {
+      border-left-color: var(--red);
+      background: rgba(248, 81, 73, 0.08);
+    }
+
+    .callout strong { display: block; margin-bottom: 0.35rem; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+
+    .card h4 {
+      margin: 0 0 0.5rem;
+      color: var(--accent);
+      font-size: 0.95rem;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    kbd {
+      font-family: var(--mono);
+      font-size: 0.8em;
+      padding: 0.15em 0.45em;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-elevated);
+      box-shadow: 0 1px 0 var(--border);
+    }
+
+    .diagram {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin: 1.25rem 0;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      line-height: 1.4;
+      overflow-x: auto;
+      white-space: pre;
+      color: var(--text-muted);
+    }
+
+    footer.site-footer {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    footer.site-footer ul {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.5rem;
+    }
+
+    #menu-toc {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+
+    @media (max-width: 960px) {
+      #menu-toc { display: inline-block; }
+    }
+
+    .example-prompt {
+      border-left: 3px solid var(--purple);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      font-style: italic;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#contenuto">Salta al contenuto</a>
+
+  <header class="site-header">
+    <a class="brand" href="#top"><h1>Guida Cursor IDE</h1></a>
+    <div class="header-actions">
+      <button type="button" id="menu-toc" aria-expanded="false" aria-controls="indice">Indice</button>
+      <a href="https://cursor.com/docs" target="_blank" rel="noopener">Docs ufficiali</a>
+    </div>
+  </header>
+
+  <div class="layout" id="top">
+    <nav class="toc" id="indice" aria-label="Indice della guida">
+      <p class="toc-title">Indice</p>
+      <input type="search" id="toc-search" placeholder="Cerca nella guida…" aria-label="Filtra indice">
+
+      <ul id="toc-list">
+        <li><a href="#introduzione">1. Introduzione</a></li>
+        <li><a href="#installazione">2. Installazione e primi passi</a></li>
+        <li class="toc-sub"><a href="#migrazione-vscode">Migrazione da VS Code</a></li>
+        <li><a href="#interfaccia">3. Interfaccia</a></li>
+        <li class="toc-sub"><a href="#agents-window">Agents Window</a></li>
+        <li><a href="#funzionalita-ai">4. Funzionalità AI</a></li>
+        <li class="toc-sub"><a href="#tab">Tab (autocompletamento)</a></li>
+        <li class="toc-sub"><a href="#inline-edit">Modifica inline</a></li>
+        <li class="toc-sub"><a href="#agent">Agent</a></li>
+        <li class="toc-sub"><a href="#modalita-agent">Modalità Agent</a></li>
+        <li><a href="#modelli">5. Modelli AI</a></li>
+        <li><a href="#regole">6. Regole e personalizzazione</a></li>
+        <li class="toc-sub"><a href="#skills">Skill e plugin</a></li>
+        <li><a href="#contesto">7. Contesto e indicizzazione</a></li>
+        <li class="toc-sub"><a href="#at-mentions">Menzioni @</a></li>
+        <li class="toc-sub"><a href="#ignore-files">File di ignore</a></li>
+        <li><a href="#mcp">8. MCP</a></li>
+        <li><a href="#terminale-sicurezza">9. Terminale e sicurezza</a></li>
+        <li><a href="#privacy">10. Privacy</a></li>
+        <li><a href="#scorciatoie">11. Scorciatoie</a></li>
+        <li><a href="#piani">12. Piani e Teams</a></li>
+        <li><a href="#bugbot-cloud">13. Bugbot e Cloud Agents</a></li>
+        <li><a href="#cli">14. Cursor CLI</a></li>
+        <li><a href="#best-practices">15. Best practice</a></li>
+        <li><a href="#glossario">16. Glossario</a></li>
+        <li><a href="#risorse">17. Risorse ufficiali</a></li>
+      </ul>
+    </nav>
+
+    <main id="contenuto">
+      <div class="hero">
+        <img src="assets/cursor-guida-hero.png" alt="Illustrazione astratta di un editor di codice con pannello AI integrato" width="1200" height="400">
+        <div class="hero-text">
+          <h2>Cursor IDE: guida completa dalla A alla Z</h2>
+          <p>Tutto ciò che serve per lavorare con l’editor AI-first di Anysphere: interfaccia, Agent, regole, MCP, agenti cloud, CLI e sicurezza.</p>
+          <div class="meta-bar">
+            <span class="badge badge-blue">Italiano</span>
+            <span class="badge badge-green">Aggiornamento: agosto 2026</span>
+            <span>Basata su <a href="https://cursor.com/docs">cursor.com/docs</a></span>
+          </div>
+        </div>
+      </div>
+
+      <section id="introduzione">
+        <h2>1. Introduzione</h2>
+        <p><strong>Cursor</strong> è un ambiente di sviluppo integrato (IDE) progettato attorno all’intelligenza artificiale, sviluppato da <strong>Anysphere</strong>. È costruito sul codice open source di <strong>Visual Studio Code</strong>, quindi l’aspetto e molte abitudini restano familiari: editor a schede, sidebar, terminale integrato, estensioni e temi.</p>
+        <p>La differenza fondamentale è che l’AI non è un plugin aggiuntivo: è parte dell’architettura. Cursor combina autocompletamento predittivo (<strong>Tab</strong>), chat e agenti che modificano più file (<strong>Agent</strong>), modifica mirata del codice selezionato (<strong>Inline Edit</strong>), ricerca semantica sulla codebase, terminale assistito e integrazioni esterne tramite <strong>MCP</strong> (Model Context Protocol).</p>
+
+        <div class="card-grid">
+          <div class="card">
+            <h4>Per chi è</h4>
+            <p>Sviluppatori che vogliono accelerare comprensione, implementazione, refactor, test e review del codice.</p>
+          </div>
+          <div class="card">
+            <h4>Cosa supporta</h4>
+            <p>La maggior parte dei linguaggi e framework; estensioni via Open VSX (non il Marketplace Microsoft).</p>
+          </div>
+          <div class="card">
+            <h4>Account</h4>
+            <p>Registrazione gratuita su <a href="https://cursor.com">cursor.com</a>; piani a pagamento per usage AI esteso e funzioni team.</p>
+          </div>
+        </div>
+
+        <h3>Panoramica delle capacità</h3>
+        <div class="diagram">┌─────────────────────────────────────────────────────────────┐
+│                        CURSOR IDE                            │
+├──────────────┬──────────────────────────────┬─────────────────┤
+│   Editor     │   Agent / Chat / Plan        │   Customize     │
+│   + Tab      │   Multi-file, terminale,     │   Rules, MCP,   │
+│   + Cmd+K    │   browser, subagent          │   Skills        │
+├──────────────┴──────────────────────────────┴─────────────────┤
+│  Indexing (embeddings + Instant Grep)  │  Cloud Agents / CLI │
+└─────────────────────────────────────────────────────────────┘</div>
+      </section>
+
+      <section id="installazione">
+        <h2>2. Installazione e primi passi</h2>
+
+        <h3>Requisiti di sistema</h3>
+        <table>
+          <thead>
+            <tr><th>Piattaforma</th><th>Requisiti</th><th>Installazione consigliata</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>macOS</td>
+              <td>macOS 12 Monterey o successivo; Apple Silicon o Intel</td>
+              <td>Scarica il file <code>.dmg</code> da <a href="https://cursor.com/download">cursor.com/download</a>, trascina in Applicazioni</td>
+            </tr>
+            <tr>
+              <td>Windows</td>
+              <td>Windows 10 o successivo</td>
+              <td>Installer <code>.exe</code></td>
+            </tr>
+            <tr>
+              <td>Linux</td>
+              <td>Distribuzioni moderne</td>
+              <td>Repository APT (Debian/Ubuntu) o DNF (Fedora/RHEL); alternativa AppImage</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Primo avvio — checklist</h3>
+        <ol>
+          <li>Apri Cursor e accedi con il tuo account.</li>
+          <li><strong>File → Open Folder</strong> e seleziona un repository di progetto.</li>
+          <li>Attendi l’<strong>indicizzazione</strong> della codebase (barra di stato).</li>
+          <li>Apri l’<strong>Agent</strong> con <kbd>Cmd</kbd>+<kbd>I</kbd> (Mac) o <kbd>Ctrl</kbd>+<kbd>I</kbd> (Windows/Linux).</li>
+          <li>Chiedi una spiegazione dell’architettura del progetto, poi una modifica piccola con revisione del diff.</li>
+          <li>Per task ampi, usa la <strong>Plan Mode</strong> (<kbd>Shift</kbd>+<kbd>Tab</kbd> o comando <code>/plan</code>).</li>
+        </ol>
+
+        <div class="example-prompt">
+          Esempio di primo prompt: «Spiega come è organizzato questo repository: entry point, cartelle principali e come si eseguono build e test.»
+        </div>
+
+        <h3 id="migrazione-vscode">Migrazione da VS Code</h3>
+        <p>Cursor e VS Code possono convivere sullo stesso progetto. Per importare il profilo:</p>
+        <ol>
+          <li>Apri <strong>Cursor Settings</strong> con <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> (Mac) o <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> (Win/Linux).</li>
+          <li>Vai su <strong>General → Account → VS Code Import → Import</strong>.</li>
+          <li>Importa estensioni, temi, impostazioni e scorciatoie.</li>
+        </ol>
+        <div class="callout warning">
+          <strong>Estensioni</strong>
+          Cursor usa il registro <strong>Open VSX</strong>, non il Marketplace Microsoft. Verifica che le estensioni critiche siano disponibili e funzionanti prima di dismettere VS Code.
+        </div>
+      </section>
+
+      <section id="interfaccia">
+        <h2>3. Interfaccia</h2>
+        <p>L’interfaccia eredita il layout di VS Code e aggiunge pannelli dedicati all’AI e alla personalizzazione.</p>
+
+        <table>
+          <thead>
+            <tr><th>Area</th><th>Funzione</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Editor centrale</strong></td><td>File, diff, split view, schede multiple</td></tr>
+            <tr><td><strong>Sidebar sinistra</strong></td><td>Explorer, ricerca, controllo versione, estensioni</td></tr>
+            <tr><td><strong>Pannello Agent</strong></td><td>Chat, Agent, Plan, Ask — <kbd>Cmd/Ctrl</kbd>+<kbd>I</kbd> o <kbd>L</kbd></td></tr>
+            <tr><td><strong>Customize</strong></td><td>Regole, skill, MCP, plugin, subagent, hook</td></tr>
+            <tr><td><strong>Terminale</strong></td><td>Shell integrata; prompt AI con <kbd>Cmd/Ctrl</kbd>+<kbd>K</kbd> nel terminale</td></tr>
+            <tr><td><strong>Status bar</strong></td><td>Stato Tab, indicizzazione, branch Git</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Due impostazioni distinte</h3>
+        <ul>
+          <li><strong>Cursor Settings</strong> (<kbd>Cmd/Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd>): privacy, modelli, Tab, Agent, indexing, Run Modes.</li>
+          <li><strong>Impostazioni editor VS Code</strong> (<kbd>Cmd/Ctrl</kbd>+<kbd>,</kbd>): tema, font, formattazione, estensioni.</li>
+        </ul>
+
+        <h3 id="agents-window">Agents Window</h3>
+        <p>Da Cursor 3 in poi esiste una vista dedicata alla gestione di <strong>più agenti in parallelo</strong> (locali e cloud), handoff tra cloud e desktop, worktree isolati e integrazione con PR.</p>
+        <p>Per aprirla: <strong>Command Palette</strong> (<kbd>Cmd/Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) → <em>Open Agents Window</em>. Per tornare all’editor classico: <em>Open IDE</em>.</p>
+        <div class="callout">
+          <strong>Quando usarla</strong>
+          Coordini più task contemporaneamente, monitori Cloud Agents o lavori su più repository senza perdere il contesto di ciascuna conversazione.
+        </div>
+      </section>
+
+      <section id="funzionalita-ai">
+        <h2>4. Funzionalità AI</h2>
+        <p>Cursor offre più “modalità” di assistenza AI, ognuna adatta a un diverso livello di autonomia e rischio.</p>
+
+        <table>
+          <thead>
+            <tr><th>Funzione</th><th>Scopo</th><th>Accesso rapido</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Tab</strong></td><td>Autocompletamento predittivo multi-riga mentre scrivi</td><td>Tasto <kbd>Tab</kbd></td></tr>
+            <tr><td><strong>Inline Edit</strong></td><td>Modifica il codice selezionato con istruzioni in linguaggio naturale</td><td><kbd>Cmd/Ctrl</kbd>+<kbd>K</kbd></td></tr>
+            <tr><td><strong>Agent</strong></td><td>Assistente autonomo: cerca, modifica più file, esegue comandi, browser</td><td><kbd>Cmd/Ctrl</kbd>+<kbd>I</kbd></td></tr>
+            <tr><td><strong>Ask</strong></td><td>Solo lettura: spiegazioni senza modificare file</td><td>Mode picker / <kbd>Shift</kbd>+<kbd>Tab</kbd></td></tr>
+            <tr><td><strong>Plan</strong></td><td>Piano strutturato prima dell’implementazione</td><td><kbd>Shift</kbd>+<kbd>Tab</kbd> o <code>/plan</code></td></tr>
+            <tr><td><strong>Debug</strong></td><td>Ipotesi, log e fix mirati per bug</td><td>Mode picker</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout warning">
+          <strong>Terminologia</strong>
+          In passato “Composer” indicava l’editing multi-file. Oggi queste capacità sono integrate nell’<strong>Agent</strong>. Guide esterne possono ancora usare il vecchio nome.
+        </div>
+
+        <h3 id="tab">Tab (autocompletamento)</h3>
+        <ul>
+          <li>I suggerimenti appaiono in grigio; <kbd>Tab</kbd> accetta l’intero suggerimento, <kbd>Esc</kbd> lo rifiuta.</li>
+          <li><kbd>Cmd/Ctrl</kbd>+<kbd>→</kbd> accetta una parola alla volta.</li>
+          <li>Supporta modifiche multi-riga, import automatici e salti tra punti del file (“jump-in-file”) con un secondo <kbd>Tab</kbd>.</li>
+          <li>Dalla status bar puoi mettere Tab in pausa (<em>Snooze</em>), disabilitarlo globalmente o per estensione di file.</li>
+        </ul>
+
+        <h3 id="inline-edit">Modifica inline (Cmd+K)</h3>
+        <ol>
+          <li>Seleziona il codice da modificare.</li>
+          <li>Premi <kbd>Cmd/Ctrl</kbd>+<kbd>K</kbd>, scrivi l’istruzione, premi Invio.</li>
+          <li>Per una domanda senza modifiche: <kbd>Opt+Return</kbd> (Mac) o <kbd>Alt+Return</kbd> (Win/Linux).</li>
+          <li>Per aprire l’Agent con il codice selezionato come contesto: <kbd>Cmd/Ctrl</kbd>+<kbd>L</kbd>.</li>
+        </ol>
+
+        <div class="example-prompt">
+          Esempio inline: «Converti questa funzione in async/await e gestisci l’errore con un messaggio utente in italiano.»
+        </div>
+
+        <h3 id="agent">Agent</h3>
+        <p>L’Agent è il cuore del flusso di lavoro “agentico”. Può:</p>
+        <ul>
+          <li>Cercare nel progetto (grep semantico e <strong>Instant Grep</strong>).</li>
+          <li>Leggere e modificare file (inclusi allegati immagine per modelli con visione).</li>
+          <li>Eseguire comandi nel terminale integrato (secondo le <strong>Run Modes</strong>).</li>
+          <li>Navigare il web e usare il browser integrato per test UI.</li>
+          <li>Fare domande di chiarimento e mettere in coda i tuoi messaggi mentre lavora.</li>
+          <li>Usare <strong>subagent</strong> (Explore, Bash, Browser e custom in <code>.cursor/agents/</code>).</li>
+          <li>Creare <strong>checkpoint</strong> locali per ripristinare uno stato (non sostituiscono Git).</li>
+        </ul>
+
+        <p><strong>Coda messaggi:</strong> mentre l’Agent è occupato puoi inviare altri messaggi in coda. <kbd>Cmd/Ctrl</kbd>+<kbd>Return</kbd> invia subito senza attendere.</p>
+        <p><strong>Side chat:</strong> conversazioni parallele con <code>/side</code> o <kbd>Shift</kbd>+<kbd>Cmd/Ctrl</kbd>+<kbd>S</kbd>.</p>
+
+        <h3 id="modalita-agent">Modalità Agent</h3>
+        <p>Cambia modalità con <kbd>Shift</kbd>+<kbd>Tab</kbd> o il menu modalità (<kbd>Cmd/Ctrl</kbd>+<kbd>.</kbd>):</p>
+        <ul>
+          <li><strong>Agent</strong> — implementazione completa con tool.</li>
+          <li><strong>Ask</strong> — esplorazione e spiegazioni senza scrivere file.</li>
+          <li><strong>Plan</strong> — definisci passi e approvazione prima del codice.</li>
+          <li><strong>Debug</strong> — ciclo ipotesi / verifica per bug difficili.</li>
+        </ul>
+
+        <div class="callout danger">
+          <strong>Regole e Tab</strong>
+          Le <strong>User Rules</strong> e le <strong>Project Rules</strong> si applicano principalmente all’Agent. <strong>Tab</strong>, <strong>Inline Edit</strong> e <strong>Bugbot</strong> non le usano allo stesso modo delle regole <code>.mdc</code>.
+        </div>
+      </section>
+
+      <section id="modelli">
+        <h2>5. Modelli AI</h2>
+        <p>In <strong>Cursor Settings → Models</strong> scegli il modello predefinito e gestisci il pool di utilizzo. I piani a pagamento distinguono spesso:</p>
+        <ul>
+          <li><strong>Cursor Models</strong> — modelli ottimizzati per Cursor (es. Composer, Grok).</li>
+          <li><strong>Other Models</strong> — modelli di terze parti (OpenAI, Anthropic, Google, ecc.) fatturati come usage API.</li>
+        </ul>
+
+        <h3>Modelli proprietari (esempi)</h3>
+        <table>
+          <thead>
+            <tr><th>Modello</th><th>Profilo d’uso</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Composer 2.5</strong></td><td>Veloce ed economico per coding agentico quotidiano</td></tr>
+            <tr><td><strong>Grok 4.5</strong></td><td>Flagship per task complessi e ragionamento profondo</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Router automatico (Auto)</h3>
+        <p>Le modalità <strong>Auto Cost</strong>, <strong>Auto Balance</strong> e <strong>Auto Intelligence</strong> delegano la scelta del modello a Cursor per bilanciare costo e qualità. Per task critici, seleziona esplicitamente un modello frontier.</p>
+
+        <h3>Suggerimenti pratici</h3>
+        <ul>
+          <li>Task routine: Composer o Auto Cost.</li>
+          <li>Refactor architetturali: Grok, Claude Opus, GPT Sol o equivalenti frontier.</li>
+          <li>Cicla tra modelli recenti: <kbd>Cmd/Ctrl</kbd>+<kbd>/</kbd>.</li>
+          <li><strong>BYOK</strong> (Bring Your Own Key): chiavi API proprie in impostazioni — la privacy segue la policy del provider scelto.</li>
+        </ul>
+        <p>Lista aggiornata e prezzi: <a href="https://cursor.com/docs/models-and-pricing">Models &amp; Pricing</a>.</p>
+      </section>
+
+      <section id="regole">
+        <h2>6. Regole e personalizzazione</h2>
+        <p>Le regole istruiscono l’Agent su convenzioni, stack, stile e vincoli del progetto. Ordine di precedenza tipico:</p>
+        <ol>
+          <li><strong>Team Rules</strong> (dashboard organizzazione)</li>
+          <li><strong>Project Rules</strong> (<code>.cursor/rules/*.mdc</code>)</li>
+          <li><strong>User Rules</strong> (globali, in Customize)</li>
+          <li>File alternativi: <code>AGENTS.md</code>, <code>CLAUDE.md</code> nella root o in sottocartelle</li>
+        </ol>
+
+        <h3>Project Rules (<code>.mdc</code>)</h3>
+        <p>Ogni file in <code>.cursor/rules/</code> usa frontmatter YAML e un tipo di applicazione:</p>
+        <table>
+          <thead>
+            <tr><th>Tipo</th><th>Quando si applica</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Always Apply</strong></td><td>Ogni conversazione Agent nel progetto</td></tr>
+            <tr><td><strong>Apply Intelligently</strong></td><td>Quando la <code>description</code> è pertinente al task</td></tr>
+            <tr><td><strong>Apply to Specific Files</strong></td><td>Pattern <code>globs</code> sui path dei file</td></tr>
+            <tr><td><strong>Apply Manually</strong></td><td>Solo se menzioni <code>@nome-regola</code></td></tr>
+          </tbody>
+        </table>
+
+        <p>Creazione rapida: comando <code>/create-rule</code> in chat, oppure <em>New Cursor Rule</em> dalla palette comandi.</p>
+
+        <pre><code>---
+description: Convenzioni API REST del backend
+globs: src/api/**/*.ts
+alwaysApply: false
+---
+
+- Usa Zod per validazione input.
+- Rispondi sempre con JSON e codici HTTP coerenti.
+- I messaggi d'errore per l'utente finale devono essere in italiano.
+</code></pre>
+
+        <h3><code>.cursorrules</code> (legacy)</h3>
+        <p>File singolo nella root del repo, <strong>deprecato</strong>. Migra il contenuto in una regola <code>.mdc</code> con <code>alwaysApply: true</code>.</p>
+
+        <h3><code>AGENTS.md</code> e <code>CLAUDE.md</code></h3>
+        <p>Markdown semplice senza frontmatter: ideale per istruzioni di build, test, architettura. I file annidati in sottocartelle aggiungono contesto locale (es. regole solo per il modulo mobile).</p>
+
+        <h3 id="skills">Skill, plugin e subagent</h3>
+        <ul>
+          <li><strong>Skills</strong> — workflow multi-step invocabili con slash command (es. deploy, review interna).</li>
+          <li><strong>Plugin</strong> — pacchetti di regole, skill e integrazioni dal marketplace Cursor.</li>
+          <li><strong>Subagent</strong> — agenti specializzati definiti in <code>.cursor/agents/</code> per esplorazione, shell o compiti ripetibili.</li>
+        </ul>
+        <p>Hub unificato: sidebar <strong>Customize</strong>.</p>
+      </section>
+
+      <section id="contesto">
+        <h2>7. Contesto e indicizzazione</h2>
+        <p>La qualità delle risposte dipende dal contesto che Cursor può vedere: file aperti, indice semantico, menzioni esplicite e regole.</p>
+
+        <h3>Indicizzazione codebase</h3>
+        <ul>
+          <li>All’apertura del progetto Cursor calcola <strong>embeddings</strong> per la ricerca semantica.</li>
+          <li>I chunk sono trattati con crittografia lato client/server secondo la documentazione ufficiale; il codice non viene memorizzato in chiaro per il training se <strong>Privacy Mode</strong> è attiva.</li>
+          <li><strong>Instant Grep</strong> accelera ricerche regex su repository grandi.</li>
+          <li>Workspace <strong>multi-root</strong>: tutte le root vengono indicizzate; alcune funzioni Git e i Cloud Agents possono avere limitazioni.</li>
+        </ul>
+
+        <h3 id="at-mentions">Menzioni @</h3>
+        <table>
+          <thead>
+            <tr><th>Menzione</th><th>Uso</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>@file</code> / <code>@cartella/</code></td><td>Includi file o directory specifici</td></tr>
+            <tr><td><code>@Terminals</code></td><td>Output del terminale</td></tr>
+            <tr><td><code>@Past Chats</code></td><td>Contesto da conversazioni precedenti</td></tr>
+            <tr><td><code>@Commit</code></td><td>Diff dello stato di lavoro non committato</td></tr>
+            <tr><td><code>@Branch</code></td><td>Diff rispetto a main</td></tr>
+            <tr><td><code>@Browser</code></td><td>Contesto dal browser integrato</td></tr>
+            <tr><td><code>@regola</code> / <code>@skill</code></td><td>Regole e skill manuali</td></tr>
+            <tr><td><code>@Docs</code></td><td>Documentazione esterna indicizzata (URL crawlati)</td></tr>
+          </tbody>
+        </table>
+        <p>Non è sempre obbligatorio usare <code>@</code>: l’Agent può cercare autonomamente. Usa le menzioni quando conosci già il file giusto o vuoi vincolare il contesto.</p>
+
+        <p>Altri input: drag &amp; drop immagini, incolla screenshot, selezione codice + <kbd>Cmd/Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>, input vocale. L’<strong>anello contesto</strong> accanto all’input mostra come sono distribuiti i token (regole, MCP, conversazione).</p>
+
+        <h3>Documentazione esterna (@Docs)</h3>
+        <p>Aggiungi documentazione da <strong>Indexing &amp; Docs</strong> o tramite <code>@Docs → Add new doc</code>. Incolla l’URL della homepage della documentazione; Cursor indicizza le pagine collegate. Referenzia <code>@Docs</code> nei messaggi in cui serve — non resta implicitamente per tutta la thread.</p>
+
+        <h3 id="ignore-files">File di ignore</h3>
+        <table>
+          <thead>
+            <tr><th>File</th><th>Effetto</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>.gitignore</code></td><td>Rispettato automaticamente</td></tr>
+            <tr><td><code>.cursorignore</code></td><td>Escluso da indexing, Agent, Tab, Inline Edit e @mention</td></tr>
+            <tr><td><code>.cursorindexingignore</code></td><td>Escluso solo dalla ricerca/indice; l’AI può ancora aprire il file se necessario</td></tr>
+          </tbody>
+        </table>
+        <div class="callout warning">
+          <strong>Limitazione</strong>
+          Terminale e tool MCP possono ancora accedere a file ignorati se un comando o un server lo consente. Non affidarti solo a <code>.cursorignore</code> per segreti: usa variabili d’ambiente e vault.
+        </div>
+
+        <pre><code># Esempio .cursorignore
+.env
+.env.*
+**/secrets/**
+dist/
+node_modules/
+*.pem
+</code></pre>
+      </section>
+
+      <section id="mcp">
+        <h2>8. MCP (Model Context Protocol)</h2>
+        <p><strong>MCP</strong> è uno standard aperto per collegare Cursor a dati e strumenti esterni: GitHub, Linear, database, Slack, server custom, ecc.</p>
+
+        <h3>Configurazione</h3>
+        <ul>
+          <li><strong>Progetto:</strong> <code>.cursor/mcp.json</code></li>
+          <li><strong>Globale:</strong> <code>~/.cursor/mcp.json</code></li>
+          <li>Installazione one-click dal <a href="https://cursor.com/marketplace">Marketplace Cursor</a> o da directory community (es. cursor.directory).</li>
+        </ul>
+
+        <pre><code>{
+  "mcpServers": {
+    "esempio": {
+      "command": "npx",
+      "args": ["-y", "@example/mcp-server"],
+      "env": {
+        "API_TOKEN": "${env:MY_TOKEN}"
+      }
+    }
+  }
+}</code></pre>
+
+        <p>Trasporti supportati: <strong>stdio</strong> (processo locale), <strong>SSE</strong> e <strong>Streamable HTTP</strong> per server remoti. Interpolazione variabili: <code>${env:VAR}</code>, <code>${workspaceFolder}</code>, <code>${userHome}</code>.</p>
+
+        <h3>Uso e sicurezza</h3>
+        <ul>
+          <li>I tool MCP compaiono tra gli strumenti disponibili all’Agent; di default richiedono approvazione prima dell’esecuzione.</li>
+          <li>Log diagnostici: pannello Output → <em>MCP Logs</em>.</li>
+          <li>Non inserire segreti in chiaro nel JSON: usa variabili d’ambiente.</li>
+          <li>In Enterprise: allowlist MCP e distribuzione team dalla dashboard.</li>
+        </ul>
+      </section>
+
+      <section id="terminale-sicurezza">
+        <h2>9. Terminale e sicurezza</h2>
+
+        <h3>Terminale integrato</h3>
+        <p>L’Agent esegue comandi shell nel terminale secondo la <strong>Run Mode</strong> configurata. Nel terminale, <kbd>Cmd/Ctrl</kbd>+<kbd>K</kbd> genera comandi da linguaggio naturale; <kbd>Cmd/Ctrl</kbd>+<kbd>Return</kbd> li esegue.</p>
+        <p>Se il prompt della shell è lento in sessioni Agent, configura il profilo per rilevare <code>CURSOR_AGENT</code> e disabilitare temi pesanti.</p>
+
+        <h3>Run Modes</h3>
+        <table>
+          <thead>
+            <tr><th>Modalità</th><th>Comportamento</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Auto-review</strong> (default)</td><td>Allowlist, sandbox, classificatore per comandi nuovi</td></tr>
+            <tr><td><strong>Allowlist</strong></td><td>Solo comandi esplicitamente consentiti</td></tr>
+            <tr><td><strong>Run Everything</strong></td><td>Nessuna conferma — da evitare su codice sensibile</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Sandbox</h3>
+        <p>Su macOS e Linux (kernel ≥ 6.2) i comandi possono girare in sandbox con restrizioni su file system e rete. Configurazione opzionale in <code>~/.cursor/sandbox.json</code> e <code>.cursor/sandbox.json</code>.</p>
+
+        <h3>Protezioni aggiuntive</h3>
+        <ul>
+          <li>Browser Protection, File-Deletion Protection, External-File Protection.</li>
+          <li><code>permissions.json</code> per istruzioni in linguaggio naturale nella modalità Auto-review.</li>
+          <li>I <strong>Cloud Agents</strong> girano in VM dedicata: le Run Mode desktop non si applicano allo stesso modo.</li>
+        </ul>
+      </section>
+
+      <section id="privacy">
+        <h2>10. Privacy</h2>
+        <p><strong>Privacy Mode</strong> (Cursor Settings → General): quando attiva, il codice non viene usato per addestrare modelli Cursor né provider terzi, secondo la policy corrente.</p>
+        <ul>
+          <li>I prompt e il contesto vengono comunque inviati ai provider del modello scelto per generare la risposta.</li>
+          <li>Elenco subprocessori: <a href="https://trust.cursor.com/subprocessors">trust.cursor.com/subprocessors</a>.</li>
+          <li><strong>Enterprise:</strong> audit log, controlli modello, SOC 2 Type II, opzioni CMEK.</li>
+          <li><strong>Workspace Trust</strong> di VS Code: se abilitato in modo restrittivo può interferire con le funzioni AI.</li>
+        </ul>
+      </section>
+
+      <section id="scorciatoie">
+        <h2>11. Scorciatoie da tastiera</h2>
+        <p>Su Windows e Linux usa <kbd>Ctrl</kbd> al posto di <kbd>Cmd</kbd>. Tutte le scorciatoie sono modificabili da <strong>Keyboard Shortcuts</strong>.</p>
+
+        <table>
+          <thead>
+            <tr><th>Azione</th><th>macOS</th><th>Windows / Linux</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Apri Agent / sidepanel</td><td><kbd>Cmd</kbd>+<kbd>I</kbd> o <kbd>L</kbd></td><td><kbd>Ctrl</kbd>+<kbd>I</kbd> o <kbd>L</kbd></td></tr>
+            <tr><td>Modifica inline</td><td><kbd>Cmd</kbd>+<kbd>K</kbd></td><td><kbd>Ctrl</kbd>+<kbd>K</kbd></td></tr>
+            <tr><td>Menu modalità</td><td><kbd>Cmd</kbd>+<kbd>.</kbd></td><td><kbd>Ctrl</kbd>+<kbd>.</kbd></td></tr>
+            <tr><td>Ruota modalità Agent</td><td><kbd>Shift</kbd>+<kbd>Tab</kbd></td><td><kbd>Shift</kbd>+<kbd>Tab</kbd></td></tr>
+            <tr><td>Cicla modelli</td><td><kbd>Cmd</kbd>+<kbd>/</kbd></td><td><kbd>Ctrl</kbd>+<kbd>/</kbd></td></tr>
+            <tr><td>Cursor Settings</td><td><kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd></td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd></td></tr>
+            <tr><td>Impostazioni VS Code</td><td><kbd>Cmd</kbd>+<kbd>,</kbd></td><td><kbd>Ctrl</kbd>+<kbd>,</kbd></td></tr>
+            <tr><td>Command Palette</td><td><kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd></td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd></td></tr>
+            <tr><td>Aggiungi selezione a chat</td><td><kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd></td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd></td></tr>
+            <tr><td>Side chat</td><td><kbd>Shift</kbd>+<kbd>Cmd</kbd>+<kbd>S</kbd></td><td><kbd>Shift</kbd>+<kbd>Ctrl</kbd>+<kbd>S</kbd></td></tr>
+            <tr><td>Invio immediato (Agent occupato)</td><td><kbd>Cmd</kbd>+<kbd>Return</kbd></td><td><kbd>Ctrl</kbd>+<kbd>Return</kbd></td></tr>
+            <tr><td>Annulla generazione</td><td><kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Backspace</kbd></td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Backspace</kbd></td></tr>
+            <tr><td>Voice Mode</td><td><kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd></td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd></td></tr>
+            <tr><td>Layout Agents</td><td><kbd>Cmd</kbd>+<kbd>E</kbd></td><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td></tr>
+            <tr><td>Accetta parola Tab</td><td><kbd>Cmd</kbd>+<kbd>→</kbd></td><td><kbd>Ctrl</kbd>+<kbd>→</kbd></td></tr>
+          </tbody>
+        </table>
+        <p>Riferimento completo: <a href="https://cursor.com/docs/reference/keyboard-shortcuts">Keyboard shortcuts</a>.</p>
+      </section>
+
+      <section id="piani">
+        <h2>12. Piani e Teams</h2>
+        <p>I dettagli cambiano nel tempo; verifica sempre <a href="https://cursor.com/pricing">cursor.com/pricing</a> e la <a href="https://cursor.com/dashboard/usage">dashboard usage</a>.</p>
+
+        <h3>Piani individuali (sintesi)</h3>
+        <table>
+          <thead>
+            <tr><th>Piano</th><th>Profilo</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Hobby</strong></td><td>Gratuito con limiti sull’usage AI</td></tr>
+            <tr><td><strong>Pro</strong></td><td>Uso quotidiano per sviluppatori singoli</td></tr>
+            <tr><td><strong>Pro+ / Ultra</strong></td><td>Maggiore allowance per modelli third-party e uso intensivo</td></tr>
+          </tbody>
+        </table>
+        <p>Completamenti Tab spesso illimitati sui piani Pro+. Oltre l’allowance incluso, l’usage on-demand è fatturato a tariffa API del modello.</p>
+
+        <h3>Teams ed Enterprise</h3>
+        <ul>
+          <li>Billing centralizzato, SSO (SAML/OIDC), Privacy Mode per team.</li>
+          <li>Team Rules, marketplace interno, analytics, Bugbot e Cloud Agents.</li>
+          <li>Enterprise: usage pooled, SCIM, controlli avanzati, supporto dedicato.</li>
+        </ul>
+        <p>Gestione fatture e abbonamento: <a href="https://cursor.com/dashboard/billing">dashboard billing</a>.</p>
+      </section>
+
+      <section id="bugbot-cloud">
+        <h2>13. Bugbot e Cloud Agents</h2>
+
+        <h3>Bugbot</h3>
+        <p>Revisione automatica di pull request e merge request su <strong>GitHub</strong>, <strong>GitLab</strong> e <strong>Bitbucket</strong>.</p>
+        <ul>
+          <li>Si attiva a ogni push sulla PR o con commento <code>cursor review</code> / <code>bugbot run</code>.</li>
+          <li>Segnala bug, problemi di sicurezza e qualità; link <em>Fix in Cursor</em> o <em>Fix in Web</em>.</li>
+          <li>Regole dedicate: <code>.cursor/BUGBOT.md</code> (anche annidato), team rules, memorie con <code>@cursor remember …</code>.</li>
+          <li>Non usa le project rules <code>.mdc</code> come l’Agent desktop.</li>
+          <li><strong>Autofix:</strong> un Cloud Agent può proporre fix automatici (richiede configurazione e billing adeguati).</li>
+        </ul>
+        <p>Setup: integrazione SCM + <a href="https://cursor.com/automations">Automations → Bugbot</a>.</p>
+
+        <h3>Cloud Agents</h3>
+        <p>Agenti che girano in <strong>macchine virtuali cloud</strong> con repository clonato, dipendenze installate e secret configurati.</p>
+        <ul>
+          <li>Avvio da desktop (dropdown Cloud), <a href="https://cursor.com/agents">cursor.com/agents</a>, Slack <code>@cursor</code>, menzioni su GitHub/Linear, API.</li>
+          <li>Producono branch, pull request, screenshot/video e desktop remoto per demo.</li>
+          <li>Ambiente: <code>.cursor/environment.json</code>, snapshot, build pre-warm dalla dashboard.</li>
+          <li>Richiedono piano a pagamento e integrazione con il provider Git.</li>
+        </ul>
+
+        <pre><code>{
+  "install": "npm ci",
+  "start": "npm run dev",
+  "terminals": []
+}</code></pre>
+        <p class="example-prompt">Esempio di task cloud: «Aggiungi test di integrazione per il modulo pagamenti, esegui la suite e apri una PR con screenshot del flusso.»</p>
+      </section>
+
+      <section id="cli">
+        <h2>14. Cursor CLI</h2>
+        <p>La CLI porta Agent, Plan e Ask nel terminale — utile per SSH, CI e automazioni.</p>
+
+        <h3>Installazione</h3>
+        <pre><code># macOS, Linux, WSL
+curl https://cursor.com/install -fsS | bash
+
+# Windows PowerShell
+irm 'https://cursor.com/install?win32=true' | iex</code></pre>
+
+        <h3>Comandi essenziali</h3>
+        <pre><code>agent                          # sessione interattiva
+agent "refactor auth module"   # prompt iniziale
+agent -p "review changes"      # output non interattivo
+agent --mode=ask               # sola lettura
+agent --plan                   # Plan mode
+agent ls                       # elenco sessioni
+agent resume                   # riprendi sessione
+agent --worktree "fix tests"   # worktree Git isolato</code></pre>
+
+        <p>La CLI rispetta <code>AGENTS.md</code>, regole, <code>mcp.json</code> e le stesse modalità di approvazione comandi. Documentazione: <a href="https://cursor.com/docs/cli/overview">CLI overview</a>.</p>
+      </section>
+
+      <section id="best-practices">
+        <h2>15. Best practice per sviluppatori</h2>
+
+        <h3>Workflow consigliato</h3>
+        <ol>
+          <li>Usa <strong>Ask</strong> per capire, poi <strong>Agent</strong> o <strong>Plan</strong> per implementare.</li>
+          <li>Mantieni modifiche piccole; rivedi ogni diff; committa su Git con messaggi chiari.</li>
+          <li>Se l’output è sbagliato: ripristina checkpoint o <code>git checkout</code>, affina il prompt o il piano, riprova.</li>
+          <li>Metti in coda i messaggi sequenziali invece di interrompere l’Agent a metà task.</li>
+        </ol>
+
+        <h3>Contesto e performance</h3>
+        <ul>
+          <li>Usa <code>@file</code> quando sai già dove guardare; altrimenti lascia che l’Agent cerchi.</li>
+          <li>Escludi <code>node_modules</code>, build e artefatti con <code>.cursorignore</code>.</li>
+          <li>Monitora l’anello contesto; conversazioni molto lunghe degradano la precisione.</li>
+          <li>Versiona <code>.cursor/rules/</code> e <code>AGENTS.md</code> nel repository.</li>
+        </ul>
+
+        <h3>Sicurezza</h3>
+        <ul>
+          <li>Privacy Mode per codice proprietario sensibile.</li>
+          <li>Run Mode <strong>Auto-review</strong>, mai <strong>Run Everything</strong> su progetti reali senza necessità.</li>
+          <li>MCP solo da fonti fidate; token in variabili d’ambiente.</li>
+        </ul>
+
+        <h3>Lavoro di squadra</h3>
+        <ul>
+          <li>Team Rules per standard org-wide; Bugbot + <code>BUGBOT.md</code> per review coerenti.</li>
+          <li>Cloud Agents con <code>environment.json</code> e secret in dashboard, non nel repo.</li>
+        </ul>
+      </section>
+
+      <section id="glossario">
+        <h2>16. Glossario</h2>
+        <table>
+          <thead>
+            <tr><th>Termine</th><th>Significato</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Agent</strong></td><td>Assistente AI autonomo con accesso a file, tool e terminale</td></tr>
+            <tr><td><strong>Tab</strong></td><td>Autocompletamento predittivo inline mentre digiti</td></tr>
+            <tr><td><strong>MCP</strong></td><td>Protocollo per collegare tool e dati esterni all’Agent</td></tr>
+            <tr><td><strong>Embedding / Index</strong></td><td>Rappresentazione vettoriale del codice per ricerca semantica</td></tr>
+            <tr><td><strong>Checkpoint</strong></td><td>Snapshot locale delle modifiche Agent per undo rapido</td></tr>
+            <tr><td><strong>Cloud Agent</strong></td><td>Agent eseguito su VM remota con integrazione Git/PR</td></tr>
+            <tr><td><strong>Bugbot</strong></td><td>Bot di review automatica sulle pull request</td></tr>
+            <tr><td><strong>BYOK</strong></td><td>Bring Your Own Key — chiavi API proprie per i modelli</td></tr>
+            <tr><td><strong>Open VSX</strong></td><td>Marketplace estensioni usato da Cursor al posto di quello Microsoft</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="risorse">
+        <h2>17. Risorse ufficiali</h2>
+        <ul>
+          <li><a href="https://cursor.com/docs">Documentazione</a></li>
+          <li><a href="https://cursor.com/help">Help Center</a></li>
+          <li><a href="https://cursor.com/download">Download</a></li>
+          <li><a href="https://cursor.com/changelog">Changelog</a></li>
+          <li><a href="https://cursor.com/agents">Cloud Agents</a></li>
+          <li><a href="https://cursor.com/marketplace">Marketplace</a></li>
+          <li><a href="https://cursor.com/dashboard">Dashboard account</a></li>
+          <li><a href="https://forum.cursor.com">Forum community</a></li>
+        </ul>
+        <div class="callout">
+          <strong>Nota sulla lingua</strong>
+          La documentazione ufficiale di Cursor è principalmente in inglese. Questa guida in italiano è un adattamento didattico basato sulle fonti ufficiali; per dettagli di billing, modelli e funzioni in beta consulta sempre il sito Cursor e il changelog della tua versione installata.
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Guida Cursor IDE in italiano — uso didattico. Cursor® è un marchio di Anysphere. Non affiliata ufficialmente; contenuti derivati da documentazione pubblica.</p>
+    <ul>
+      <li><a href="#top">Torna su</a></li>
+      <li><a href="https://cursor.com">cursor.com</a></li>
+      <li><a href="https://cursor.com/docs">Docs</a></li>
+    </ul>
+  </footer>
+
+  <script>
+    (function () {
+      var tocLinks = document.querySelectorAll('#toc-list a');
+      var sections = [];
+      tocLinks.forEach(function (a) {
+        var id = a.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) sections.push({ id: id, el: el, link: a });
+      });
+
+      var observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              tocLinks.forEach(function (l) { l.classList.remove('active'); });
+              var match = sections.find(function (s) { return s.el === entry.target; });
+              if (match) match.link.classList.add('active');
+            }
+          });
+        },
+        { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
+      );
+      sections.forEach(function (s) { observer.observe(s.el); });
+
+      var search = document.getElementById('toc-search');
+      if (search) {
+        search.addEventListener('input', function () {
+          var q = search.value.toLowerCase().trim();
+          document.querySelectorAll('#toc-list li').forEach(function (li) {
+            var text = li.textContent.toLowerCase();
+            li.style.display = !q || text.indexOf(q) !== -1 ? '' : 'none';
+          });
+        });
+      }
+
+      var menuBtn = document.getElementById('menu-toc');
+      var tocNav = document.getElementById('indice');
+      if (menuBtn && tocNav) {
+        menuBtn.addEventListener('click', function () {
+          var open = tocNav.classList.toggle('mobile-open');
+          menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        tocNav.addEventListener('click', function (e) {
+          if (e.target.tagName === 'A' && window.innerWidth <= 960) {
+            tocNav.classList.remove('mobile-open');
+            menuBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
