@@ -442,31 +442,36 @@
   }
 
   // ===================== Dropbox: file I/O =====================
-  async function dbxDownload(){
+  function dbxError(status, text){
+    let msg = 'Dropbox '+status;
+    if(/missing_scope/.test(text||'')) msg = 'Permesso mancante (missing_scope): spunta files.content.read e files.content.write in Permissions, fai Submit, poi Disconnetti e riconnetti.';
+    else if(/expired_access_token|invalid_access_token/.test(text||'')) msg = 'Sessione Dropbox scaduta: premi Disconnetti e riconnetti.';
+    else if(text) msg += ': ' + text.slice(0,180);
+    const e = new Error(msg); e.detail = text; e.status = status; return e;
+  }
+  async function dbxFetch(url, arg, body, _retried){
     const tok = await ensureToken();
-    let res = await fetch('https://content.dropboxapi.com/2/files/download', {
-      method:'POST', headers:{ 'Authorization':'Bearer '+tok, 'Dropbox-API-Arg': JSON.stringify({path:FILE_PATH}) }
-    });
-    if(res.status === 401){ await refreshToken(); return dbxDownload(); }
-    if(res.status === 409){ return { notes:[], deleted:[] }; } // file non ancora presente
-    if(!res.ok) throw new Error('download '+res.status);
+    const headers = { 'Authorization':'Bearer '+tok, 'Dropbox-API-Arg': JSON.stringify(arg) };
+    if(body !== undefined) headers['Content-Type'] = 'application/octet-stream';
+    const res = await fetch(url, { method:'POST', headers, body });
+    if(res.status === 401 && !_retried){        // token scaduto: rinnova UNA volta sola
+      try{ await refreshToken(); }catch(e){}
+      return dbxFetch(url, arg, body, true);
+    }
+    return res;
+  }
+  async function dbxDownload(){
+    const res = await dbxFetch('https://content.dropboxapi.com/2/files/download', {path:FILE_PATH});
+    if(res.status === 409) return { notes:[], deleted:[] };   // file non ancora presente
+    if(!res.ok){ const t = await res.text().catch(()=> ''); throw dbxError(res.status, t); }
     const txt = await res.text();
     try{ const j = JSON.parse(txt); return { notes:j.notes||[], deleted:j.deleted||[] }; }
     catch(e){ return { notes:[], deleted:[] }; }
   }
   async function dbxUpload(obj){
-    const tok = await ensureToken();
-    const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
-      method:'POST',
-      headers:{
-        'Authorization':'Bearer '+tok,
-        'Dropbox-API-Arg': JSON.stringify({ path:FILE_PATH, mode:'overwrite', mute:true }),
-        'Content-Type':'application/octet-stream'
-      },
-      body: JSON.stringify({ v:1, notes:obj.notes, deleted:obj.deleted })
-    });
-    if(res.status === 401){ await refreshToken(); return dbxUpload(obj); }
-    if(!res.ok) throw new Error('upload '+res.status);
+    const body = JSON.stringify({ v:1, notes:obj.notes, deleted:obj.deleted });
+    const res = await dbxFetch('https://content.dropboxapi.com/2/files/upload', { path:FILE_PATH, mode:'overwrite', mute:true }, body);
+    if(!res.ok){ const t = await res.text().catch(()=> ''); throw dbxError(res.status, t); }
   }
 
   // ===================== sync =====================
@@ -489,7 +494,9 @@
       setStatus('saved','Sincronizzato');
       render();
     }catch(e){
-      setStatus('err','Offline — salvato in locale');
+      if(e && e.status){ setStatus('err','Errore Dropbox'); showToast(e.message); }
+      else { setStatus('err','Offline — salvato in locale'); }
+      console.warn('[sync]', e && e.message, e && e.detail || '');
     }finally{
       syncing = false;
       if(pendingSync){ pendingSync = false; scheduleSync(); }
@@ -505,7 +512,11 @@
       saveCache();
       if(JSON.stringify(state) !== before){ render(); if(!silent) showToast('Aggiornato da Dropbox'); }
       setStatus('saved','Sincronizzato');
-    }catch(e){ setStatus('err','Offline — salvato in locale'); }
+    }catch(e){
+      if(e && e.status){ setStatus('err','Errore Dropbox'); if(!silent) showToast(e.message); }
+      else { setStatus('err','Offline — salvato in locale'); }
+      console.warn('[pull]', e && e.message, e && e.detail || '');
+    }
   }
 
   // ===================== operazioni sulle note =====================
