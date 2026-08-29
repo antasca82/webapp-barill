@@ -1019,6 +1019,9 @@ function saveEntryForm() {
     return e.reparto === dept && e.linea === line && e.data === data && (!base || e.id !== base.id);
   });
 
+  if (clash && !confirm("Esiste gi\u00E0 una voce per " + line + " del " + fmtDate(data) +
+      ".\n\nSostituirla con i dati inseriti?")) return;
+
   let target, msg = "Voce salvata.";
   if (clash) {
     target = clash;
