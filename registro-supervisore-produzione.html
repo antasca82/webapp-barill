@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro supervisore produzione — Produzione</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --navy: #001E43;
+    --navy-2: #0A2A57;
+    --red: #CC0000;
+    --gold: #FFCB31;
+    --gold-soft: #FFF6D6;
+    --green: #15803D;
+    --green-soft: #E8F6EC;
+    --ink: #1B2433;
+    --muted: #5B6677;
+    --line: #D9DEE6;
+    --bg: #EEF1F5;
+    --paper: #FFFFFF;
+    --focus: 0 0 0 3px rgba(0, 30, 67, 0.25);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: none; box-shadow: var(--focus); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  /* ---------- Testata ---------- */
+  .top {
+    background: var(--navy);
+    color: #fff;
+    border-bottom: 4px solid var(--red);
+    padding: 12px 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .brand h1 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.2px; }
+  .brand p { margin: 0; font-size: 13px; color: rgba(255,255,255,0.72); }
+  .who { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .who label { font-size: 14px; color: rgba(255,255,255,0.8); }
+  .who select {
+    padding: 7px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.35);
+    background: var(--navy-2);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    min-width: 200px;
+  }
+  .save-state { font-size: 13px; color: rgba(255,255,255,0.75); min-width: 150px; text-align: right; }
+  .save-state.err { color: var(--gold); font-weight: 700; }
+  .btn-top {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 6px;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .btn-top:hover { background: rgba(255,255,255,0.1); }
+
+  /* ---------- Schede ---------- */
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 28px;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+  }
+  .tab {
+    border: none;
+    background: none;
+    padding: 14px 20px 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--muted);
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+  }
+  .tab:hover { color: var(--navy); }
+  .tab.on { color: var(--navy); border-bottom-color: var(--navy); }
+  .tab .count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 7px;
+    border-radius: 10px;
+    background: var(--gold);
+    color: var(--navy);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  /* ---------- Barra periodo ---------- */
+  .period {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    flex-wrap: wrap;
+  }
+  .period .nav {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--navy);
+  }
+  .period .nav:hover { border-color: var(--navy); }
+  .period .current { font-size: 20px; font-weight: 700; color: var(--navy); min-width: 250px; text-align: center; }
+  .period .current small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .btn {
+    padding: 8px 16px;
+    border-radius: 7px;
+    border: 1px solid var(--navy);
+    background: var(--paper);
+    color: var(--navy);
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .btn:hover { background: #F2F5F9; }
+  .btn.primary { background: var(--navy); color: #fff; }
+  .btn.primary:hover { background: var(--navy-2); }
+  .btn.small { padding: 5px 11px; font-size: 13px; }
+  .btn.ghost { border-color: var(--line); color: var(--muted); }
+  .btn.danger { border-color: var(--red); color: var(--red); }
+  .hint { font-size: 14px; color: var(--muted); }
+
+  /* ---------- Registro: colonna linea + annotazioni ---------- */
+  .register { padding: 0 28px 60px; }
+  .entry {
+    display: grid;
+    grid-template-columns: 172px minmax(0, 1fr);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .gutter {
+    background: #F6F8FB;
+    border-right: 1px solid var(--line);
+    padding: 16px 18px;
+  }
+  .gutter .code {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.5px;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .gutter .rep { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .gutter .code.small { font-size: 22px; line-height: 1.15; }
+  .gutter .code.mini  { font-size: 17px; line-height: 1.25; letter-spacing: -0.2px; }
+  .gutter .badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 2px 9px;
+    border-radius: 10px;
+    background: var(--gold);
+    color: var(--navy);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .notes { padding: 16px 20px; min-width: 0; }
+  .field + .field { margin-top: 16px; }
+  .field-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .field-head h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--navy); }
+  .field-head .meta { font-size: 13px; color: var(--muted); }
+  textarea.note {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 76px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+    font-size: 16px;
+    line-height: 1.55;
+    resize: none;
+    overflow: hidden;
+  }
+  textarea.note:focus { border-color: var(--navy); box-shadow: var(--focus); outline: none; }
+  textarea.note::placeholder { color: #9AA3B0; }
+
+  /* Azioni */
+  .actions { display: flex; flex-direction: column; gap: 8px; }
+  .action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 140px 160px 36px;
+    gap: 8px;
+    align-items: start;
+    padding: 8px;
+    border-radius: 8px;
+    background: var(--gold-soft);
+    border: 1px solid #F3DC8A;
+  }
+  .action.done { background: var(--green-soft); border-color: #BFE3CB; }
+  .action textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper);
+    font-size: 15px;
+    line-height: 1.45;
+    resize: none;
+    overflow: hidden;
+  }
+  .action select, .action input[type="date"] {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px;
+    line-height: normal;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper);
+    font-size: 15px;
+  }
+  .action .del {
+    width: 36px; height: 40px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .action .del:hover { color: var(--red); border-color: var(--red); }
+  .entry.altra .gutter { background: #FFF8E8; }
+  .gutter .badge.alt { background: #E5E9F0; color: var(--muted); }
+  .add-line {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 14px 18px; background: var(--paper);
+    border: 1px dashed var(--line); border-radius: 10px;
+    font-size: 15px; color: var(--muted);
+  }
+  .add-line select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); font-size: 15px; }
+  .empty-line { font-size: 14px; color: var(--muted); padding: 4px 0; }
+
+  details.more { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 10px; }
+  details.more summary { cursor: pointer; font-size: 15px; font-weight: 600; color: var(--navy); }
+  .old-action {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr) 150px 140px;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #EEF1F5;
+    font-size: 15px;
+  }
+  .old-action:last-child { border-bottom: none; }
+  .old-action select, .old-action input { min-height: 36px; padding: 6px 8px; line-height: normal; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 14px; width: 100%; }
+  .wk {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 5px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .day-report { padding: 7px 0; border-bottom: 1px solid #EEF1F5; font-size: 15px; }
+  .day-report:last-child { border-bottom: none; }
+  .day-report b { color: var(--navy); margin-right: 6px; }
+
+  /* Storico */
+  .filters { display: flex; gap: 12px; align-items: center; padding: 14px 28px; flex-wrap: wrap; }
+  .seg { display: flex; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  .seg button { border: none; background: none; padding: 7px 16px; border-radius: 6px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .seg button.on { background: var(--navy); color: #fff; }
+  .filters select { padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); font-size: 15px; }
+  .hist { margin: 0 28px 60px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .hist-row {
+    display: grid;
+    grid-template-columns: 80px 110px minmax(0, 1fr) 160px 140px 140px;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid #EEF1F5;
+    border-left: 5px solid var(--gold);
+  }
+  .hist-row.done { border-left-color: var(--green); }
+  .hist-row.done .txt { color: var(--muted); text-decoration: line-through; }
+  .hist-row.late .date-cell input { border-color: var(--red); color: var(--red); font-weight: 700; }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-row .btn { white-space: nowrap; }
+  .hist-row .ln { font-size: 18px; font-weight: 800; color: var(--navy); }
+  .hist-row .txt { font-size: 15px; }
+  .hist-row select, .hist-row input { min-height: 38px; padding: 6px 8px; line-height: normal; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 14px; width: 100%; }
+
+  /* Schermate di avvio */
+  .screen { max-width: 640px; margin: 60px auto; padding: 36px 40px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; }
+  .screen h2 { margin: 0 0 10px; font-size: 24px; color: var(--navy); }
+  .screen p { margin: 0 0 14px; }
+  .screen ol { padding-left: 20px; margin: 0 0 20px; }
+  .screen li { margin-bottom: 6px; }
+  .names { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 18px; }
+  .names button {
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--paper);
+    text-align: left;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--navy);
+    cursor: pointer;
+  }
+  .names button:hover { border-color: var(--navy); background: #F6F8FB; }
+  .names button span { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+
+  /* ---------- Finestre ---------- */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0, 20, 45, 0.55); display: none; align-items: flex-start; justify-content: center; padding: 40px 16px; z-index: 50; overflow-y: auto; }
+  .modal-bg.open { display: flex; }
+  .modal { width: 100%; max-width: 920px; background: var(--paper); border-radius: 12px; overflow: hidden; }
+  .modal.small { max-width: 420px; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; background: var(--navy); color: #fff; border-bottom: 3px solid var(--red); }
+  .modal-head h2 { margin: 0; font-size: 20px; }
+  .modal-head .x { background: none; border: none; color: #fff; font-size: 28px; line-height: 1; cursor: pointer; }
+  .modal-body { padding: 20px 24px; }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--line); background: #F6F8FB; }
+  .set-section { padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .set-section:last-child { border-bottom: none; }
+  .set-section h3 { margin: 0 0 4px; font-size: 18px; color: var(--navy); }
+  .set-section > p { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+  .row-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row-inline input[type="text"], .row-inline input[type="password"], .row-inline select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; font-size: 15px; background: var(--paper); }
+  .prof-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px 40px; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .prof-row input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; font-size: 15px; width: 100%; }
+  .prof-row .file { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icon-del { width: 40px; height: 38px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); color: var(--muted); font-size: 18px; cursor: pointer; }
+  .icon-del:hover { color: var(--red); border-color: var(--red); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 12px; border: 1px solid var(--line); border-radius: 16px; font-weight: 700; color: var(--navy); background: #F6F8FB; }
+  .chip button { border: none; background: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 0 4px; }
+  .chip button:hover { color: var(--red); }
+  table.assign { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.assign th { text-align: left; font-size: 13px; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 2px solid var(--line); }
+  table.assign td { padding: 6px 8px; border-bottom: 1px solid #EEF1F5; }
+  table.assign td:first-child { font-weight: 800; color: var(--navy); }
+  table.assign select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 15px; }
+  table.assign tr.unassigned td:first-child { color: var(--red); }
+  .assign-wrap { max-height: 340px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .pin-input { width: 100%; padding: 12px; font-size: 22px; letter-spacing: 6px; text-align: center; border: 1px solid var(--line); border-radius: 8px; }
+  .err-msg { color: var(--red); font-size: 14px; margin-top: 8px; min-height: 20px; }
+
+  /* Vista supervisore */
+  .sup-bar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 12px 28px; background: var(--paper); border-bottom: 1px solid var(--line);
+  }
+  .sup-title { font-size: 18px; font-weight: 800; color: var(--navy); }
+  .sup-title span { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+  .sup-bar select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); font-size: 15px; }
+  .sup-bar .seg button { padding: 6px 13px; font-size: 14px; }
+  .sup-titolare { margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .sup-voce { padding: 10px 0; border-bottom: 1px dashed var(--line); }
+  .sup-voce:last-child { border-bottom: none; }
+  .sup-voce:first-child { padding-top: 0; }
+  .sup-chi { font-size: 13px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+  .sup-sez.big {
+    font-size: 13px; color: var(--red); letter-spacing: 0.4px;
+    margin: 18px 0 8px; padding-bottom: 5px; border-bottom: 2px solid rgba(204,0,0,0.35);
+  }
+  .sup-voce + .sup-sez.big { margin-top: 22px; }
+  .sup-data.scaduta { color: var(--red); font-weight: 700; }
+  .sup-sez { font-size: 11px; font-weight: 800; letter-spacing: .3px; color: var(--muted); margin: 8px 0 2px; }
+  .sup-testo { font-size: 15px; line-height: 1.55; white-space: pre-wrap; }
+  .sup-azioni { margin: 4px 0 0; padding-left: 0; list-style: none; }
+  .sup-azioni li { font-size: 15px; line-height: 1.5; margin-bottom: 4px; }
+  .sup-stato {
+    display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 10px;
+    background: var(--gold-soft); color: #8A6100; font-size: 11px; font-weight: 800; border: 1px solid #F3DC8A;
+  }
+  .sup-stato.ok { background: var(--green-soft); color: var(--green); border-color: #BFE3CB; }
+  .sup-data { font-size: 13px; color: var(--muted); }
+  .sup-avviso {
+    margin: 12px 28px 0; padding: 12px 16px;
+    background: var(--gold-soft); border: 1px solid #F3DC8A; border-left: 5px solid var(--gold);
+    border-radius: 8px; font-size: 14px; line-height: 1.5; color: #6B4E00;
+  }
+  .sup-avviso .q { color: var(--muted); font-size: 13px; }
+  .sup-avviso-azioni { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .sup-recupero { margin-top: 10px; padding-top: 8px; border-top: 1px solid #F3DC8A; font-size: 13px; }
+  @media (max-width: 760px) { .sup-avviso { margin-left: 14px; margin-right: 14px; } }
+  .sup-vuoto, .sup-err {
+    padding: 22px; text-align: center; color: var(--muted); font-style: italic;
+    background: var(--paper); border: 1px dashed var(--line); border-radius: 10px;
+  }
+  .sup-err { margin-top: 12px; color: var(--red); font-style: normal; border-color: var(--red); }
+  .sl-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+  .sl-item {
+    display: flex; align-items: center; gap: 7px; padding: 7px 10px;
+    border: 1px solid var(--line); border-radius: 7px; background: var(--paper);
+    font-weight: 700; color: var(--muted); cursor: pointer; font-size: 15px;
+  }
+  .sl-item.on { border-color: var(--navy); background: #EEF3FA; color: var(--navy); }
+  @media (max-width: 760px) { .sup-bar { padding-left: 14px; padding-right: 14px; } }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 20px);
+    background: var(--navy); color: #fff; padding: 12px 20px; border-radius: 8px;
+    font-size: 15px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 80;
+    max-width: 90vw;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #toast.error { background: var(--red); }
+
+  @media (max-width: 760px) {
+    .top, .tabs, .period, .register, .filters { padding-left: 14px; padding-right: 14px; }
+    .hist { margin: 0 14px 40px; }
+    .entry { grid-template-columns: 1fr; }
+    .gutter { border-right: none; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; }
+    .gutter .code { font-size: 26px; }
+    .gutter .badge { margin-top: 0; }
+    .action { grid-template-columns: 1fr 1fr 36px; }
+    .action textarea { grid-column: 1 / -1; }
+    .old-action, .hist-row { grid-template-columns: 1fr 1fr; }
+    .prof-row { grid-template-columns: 1fr 40px; }
+    .prof-row .file { display: none; }
+    .who { margin-left: 0; }
+  }
+  /* Storico azioni */
+  .az-riepilogo { font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+  .az-late { color: var(--red); }
+  .az-lista { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .az-riga {
+    display: grid; grid-template-columns: 80px 110px minmax(0, 1fr) 160px 110px 110px;
+    gap: 12px; align-items: center; padding: 12px 18px;
+    border-bottom: 1px solid #EEF1F5; border-left: 5px solid var(--gold);
+  }
+  .az-riga:last-child { border-bottom: none; }
+  .az-riga.done { border-left-color: var(--green); }
+  .az-riga.done .az-testo { color: var(--muted); text-decoration: line-through; }
+  .az-riga.late { border-left-color: var(--red); }
+  .az-riga.late .az-data { color: var(--red); font-weight: 800; }
+  .az-linea { font-size: 18px; font-weight: 800; color: var(--navy); }
+  .az-linea em { display: block; font-style: normal; font-size: 12px; font-weight: 400; color: var(--muted); }
+  .az-testo { font-size: 15px; line-height: 1.5; }
+  .az-prof { font-size: 14px; color: var(--muted); }
+  .az-data { font-size: 14px; font-variant-numeric: tabular-nums; color: var(--muted); }
+  @media (max-width: 900px) { .az-riga { grid-template-columns: 1fr 1fr; } }
+
+  /* Barra dei filtri del supervisore */
+  .sup-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 28px; background: var(--paper); border-bottom: 1px solid var(--line); }
+  .sup-bar select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); font-size: 15px; }
+  .sup-bar .seg button { padding: 7px 14px; font-size: 14px; }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  @media (max-width: 760px) { .sup-bar { padding-left: 14px; padding-right: 14px; } }
+
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1>Registro supervisore produzione</h1>
+    <p>Manutenzione Produzione, Foggia</p>
+  </div>
+  <span class="save-state" id="stato-lettura"></span>
+  <button class="btn-top" id="btn-reload" hidden>Ricarica registri</button>
+  <button class="btn-top" id="btn-settings">Impostazioni</button>
+</header>
+
+<main id="main"></main>
+
+<!-- Impostazioni -->
+<div class="modal-bg" id="modal-settings">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Impostazioni</h2>
+      <button class="x" data-close="modal-settings" aria-label="Chiudi">×</button>
+    </div>
+    <div class="modal-body" id="settings-body"></div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close="modal-settings">Annulla</button>
+      <button class="btn primary" id="btn-save-config">Salva impostazioni</button>
+    </div>
+  </div>
+</div>
+
+<!-- Linee da mostrare -->
+<div class="modal-bg" id="modal-linee">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Impianti da mostrare</h2>
+      <button class="x" data-close="modal-linee" aria-label="Chiudi">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="row-inline" style="margin-bottom:12px">
+        <button class="btn small ghost" id="lin-all">Seleziona tutte</button>
+        <button class="btn small ghost" id="lin-none">Deseleziona tutte</button>
+        <span class="hint" id="lin-count"></span>
+      </div>
+      <div id="lin-list"></div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" data-close="modal-linee">Chiudi</button></div>
+  </div>
+</div>
+
+<input type="file" id="file-monitoraggio" accept=".xlsx" hidden>
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// COSTANTI E UTILITÀ
+// ============================================================
+const CONFIG_FILE = 'Config_Produzione.xlsx';
+const REPARTI = ['Produzione'];
+const PREFISSO_FILE = 'ReportProd_';
+const LINEA_VARIE = 'Varie';   // riga dei lavori fuori dagli impianti
+
+// Famiglie di impianti della produzione: sostituiscono il filtro per reparto
+const CATEGORIE = [
+  { id: 'all',     label: 'Tutti',            test: () => true },
+  { id: 'gruppi',  label: 'Gruppi',           test: (n) => /^gr\s*\d/i.test(n) },
+  { id: 'semola',  label: 'Sili semola',      test: (n) => /^sili\s+semola/i.test(n) },
+  { id: 'corta',   label: 'Sili pasta corta', test: (n) => /^sili\s+pasta\s+corta/i.test(n) },
+  { id: 'lavatr',  label: 'Lavatrafile',      test: (n) => /^lavatrafile/i.test(n) },
+  { id: 'sfilatr', label: 'Sfilatrice',       test: (n) => /^sfilatrice/i.test(n) },
+  { id: 'varie',   label: 'Varie',            test: (n) => n === LINEA_VARIE }
+];
+
+const GIORNI = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+
+const uid = () => 'r_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const pad = (n) => String(n).padStart(2, '0');
+const isoOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const todayISO = () => isoOf(new Date());
+function addDays(iso, n) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return isoOf(d); }
+function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+function lunediDi(iso) { const d = new Date(iso + 'T00:00:00'); return addDays(iso, -((d.getDay() + 6) % 7)); }
+function isoWeek(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  const t = new Date(d.valueOf());
+  t.setDate(t.getDate() - ((d.getDay() + 6) % 7) + 3);
+  const f = new Date(t.getFullYear(), 0, 4);
+  f.setDate(f.getDate() - ((f.getDay() + 6) % 7) + 3);
+  return 1 + Math.round((t - f) / (7 * 86400000));
+}
+// Il punto settimanale si fa il martedì: la vista si apre sulla settimana conclusa
+function defaultLunedi() { return addDays(lunediDi(todayISO()), -7); }
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function hhmm(ts) { if (!ts) return ''; const d = new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function slug(nome) {
+  return String(nome).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'professional';
+}
+function sortLinee(a, b) {
+  return a.reparto.localeCompare(b.reparto) || a.linea.localeCompare(b.linea, 'it', { numeric: true, sensitivity: 'base' });
+}
+function normDate(v) {
+  if (v == null || v === '') return '';
+  if (v instanceof Date) return isoOf(new Date(v.getTime() + 12 * 3600 * 1000));
+  if (typeof v === 'number') { const p = XLSX.SSF.parse_date_code(v); return p ? `${p.y}-${pad(p.m)}-${pad(p.d)}` : ''; }
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+  m = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})$/);
+  if (m) return `${m[3].length === 2 ? '20' + m[3] : m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  return '';
+}
+function toast(msg, kind) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = kind || '';
+  requestAnimationFrame(() => el.classList.add('show'));
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 3200);
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ============================================================
+// PIN dei professional: nel file finisce solo un'impronta cifrata
+// ============================================================
+function hexOf(buf) { return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join(''); }
+async function sha256Hex(testo) {
+  if (window.crypto && crypto.subtle) return hexOf(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(testo)));
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (const ch of testo) { h1 = Math.imul(h1 ^ ch.charCodeAt(0), 16777619) >>> 0; h2 = Math.imul(h2 + ch.charCodeAt(0), 2654435761) >>> 0; }
+  return h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0');
+}
+async function cifraPin(pin) {
+  const sale = hexOf(crypto.getRandomValues(new Uint8Array(8)));
+  return `sha256:${sale}:${await sha256Hex(sale + ':' + pin)}`;
+}
+
+// ============================================================
+// INDEXEDDB: ricorda la cartella condivisa
+// ============================================================
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('registro-supervisore-produzione', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('handles');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbSet(k, v) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => { const tx = db.transaction('handles', 'readwrite'); tx.objectStore('handles').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+}
+async function idbGet(k) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => { const tx = db.transaction('handles', 'readonly'); const r = tx.objectStore('handles').get(k); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+}
+
+// ============================================================
+// STATO
+// ============================================================
+const S = {
+  dir: null,
+  needsPermission: false,
+  cfg: null,
+  cfgStamp: null,
+  cfgDraft: null,
+  registri: null,            // contenuto dei registri dichiarati in Config.xlsx
+  estranei: [],              // file Report_*.xlsx non dichiarati (copie in conflitto)
+  recupero: null,            // esito dell'ultimo recupero dalle copie
+  lettura: null,             // quando sono stati letti
+  tab: localStorage.getItem('sv_p_tab') || 'giorno',
+  giorno: todayISO(),
+  lunedi: defaultLunedi(),
+  reparto: localStorage.getItem('sv_p_reparto') || 'all',
+  escluse: (() => { try { const v = JSON.parse(localStorage.getItem('sv_p_escluse')); return new Set(Array.isArray(v) ? v : []); } catch (e) { return new Set(); } })(),
+  prof: '',
+  soloContenuto: localStorage.getItem('sv_p_solo') !== '0',
+  stFiltro: localStorage.getItem('sv_p_stato') || 'aperta',
+  linea: localStorage.getItem('sv_p_linea') || ''
+};
+
+// ============================================================
+// FILE EXCEL
+// ============================================================
+function rowsOf(wb, name) {
+  const ws = wb.Sheets[name];
+  return ws ? XLSX.utils.sheet_to_json(ws, { defval: '', raw: true }) : [];
+}
+const str = (v) => (v == null ? '' : String(v)).trim();
+
+function parseConfig(wb) {
+  const cfg = { professionals: [], linee: [], affidamenti: [] };
+  for (const r of rowsOf(wb, 'Professional')) {
+    const id = str(r.ID), nome = str(r.Nome);
+    if (!id || !nome) continue;
+    cfg.professionals.push({ id, nome, file: str(r.File) || `${PREFISSO_FILE}${slug(nome)}.xlsx`, pin: str(r.PIN) });
+  }
+  for (const r of rowsOf(wb, 'Linee')) {
+    const reparto = str(r.Reparto), linea = str(r.Linea).toUpperCase();
+    if (reparto && linea && !cfg.linee.some(l => l.reparto === reparto && l.linea === linea)) cfg.linee.push({ reparto, linea });
+  }
+  for (const r of rowsOf(wb, 'Affidamenti')) {
+    const profId = str(r.ProfessionalID), reparto = str(r.Reparto), linea = str(r.Linea).toUpperCase();
+    if (profId && reparto && linea && !cfg.affidamenti.some(a => a.reparto === reparto && a.linea === linea)) cfg.affidamenti.push({ profId, reparto, linea });
+  }
+  cfg.linee.sort(sortLinee);
+  return cfg;
+}
+function buildConfigWb(cfg) {
+  const wb = XLSX.utils.book_new();
+  const add = (name, aoa, cols) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = cols.map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, name); };
+  add('Professional', [['ID', 'Nome', 'File', 'PIN'], ...cfg.professionals.map(p => [p.id, p.nome, p.file, p.pin || ''])], [22, 28, 34, 40]);
+  add('Linee', [['Reparto', 'Linea'], ...cfg.linee.map(l => [l.reparto, l.linea])], [10, 12]);
+  add('Affidamenti', [['ProfessionalID', 'Reparto', 'Linea'], ...cfg.affidamenti.map(a => [a.profId, a.reparto, a.linea])], [22, 10, 12]);
+  return wb;
+}
+
+function emptyReport() { return { giornaliero: [], settimanale: [], azioni: [] }; }
+function buildReportWb(rep, prof) {
+  const wb = XLSX.utils.book_new();
+  const add = (name, aoa, cols) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = cols.map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, name); };
+  const g = rep.giornaliero.filter(r => r.testo.trim()).sort((a, b) => b.data.localeCompare(a.data) || a.linea.localeCompare(b.linea, 'it', { numeric: true }));
+  const st = rep.settimanale.filter(r => (r.riscontrati + r.presenti).trim()).sort((a, b) => b.lunedi.localeCompare(a.lunedi) || a.linea.localeCompare(b.linea, 'it', { numeric: true }));
+  const az = rep.azioni.filter(r => r.testo.trim()).sort((x, y) => y.lunedi.localeCompare(x.lunedi) || x.linea.localeCompare(y.linea, 'it', { numeric: true }));
+  add('Info', [['Chiave', 'Valore'], ['Professional', prof.nome], ['ProfessionalID', prof.id], ['Aggiornato', new Date().toLocaleString('it-IT')]], [16, 30]);
+  add('Giornaliero', [['Data', 'Reparto', 'Linea', 'Testo', 'Aggiornato', 'ID'], ...g.map(r => [r.data, r.reparto, r.linea, r.testo, r.agg, r.id])], [12, 9, 10, 90, 15, 22]);
+  add('Settimanale', [['Lunedi', 'Reparto', 'Linea', 'ProblemiRiscontrati', 'ProblemiPresenti', 'Aggiornato', 'ID'], ...st.map(r => [r.lunedi, r.reparto, r.linea, r.riscontrati, r.presenti, r.agg, r.id])], [12, 9, 10, 70, 70, 15, 22]);
+  add('Azioni', [['Lunedi', 'Reparto', 'Linea', 'Testo', 'Stato', 'Data', 'Aggiornato', 'ID'], ...az.map(r => [r.lunedi, r.reparto, r.linea, r.testo, r.stato === 'conclusa' ? 'Conclusa' : 'Aperta', r.data, r.agg, r.id])], [12, 9, 10, 80, 11, 12, 15, 22]);
+  return wb;
+}
+function parseReport(wb) {
+  const rep = emptyReport();
+  for (const r of rowsOf(wb, 'Giornaliero')) {
+    const data = normDate(r.Data), linea = str(r.Linea).toUpperCase();
+    if (!data || !linea) continue;
+    rep.giornaliero.push({ id: str(r.ID) || uid(), data, reparto: str(r.Reparto), linea, testo: str(r.Testo), agg: Number(r.Aggiornato) || 0 });
+  }
+  for (const r of rowsOf(wb, 'Settimanale')) {
+    const lunedi = normDate(r.Lunedi), linea = str(r.Linea).toUpperCase();
+    if (!lunedi || !linea) continue;
+    rep.settimanale.push({ id: str(r.ID) || uid(), lunedi, reparto: str(r.Reparto), linea, riscontrati: str(r.ProblemiRiscontrati), presenti: str(r.ProblemiPresenti), agg: Number(r.Aggiornato) || 0 });
+  }
+  for (const r of rowsOf(wb, 'Azioni')) {
+    const lunedi = normDate(r.Lunedi), linea = str(r.Linea).toUpperCase();
+    if (!lunedi || !linea) continue;
+    rep.azioni.push({
+      id: str(r.ID) || uid(), lunedi, reparto: str(r.Reparto), linea,
+      testo: str(r.Testo), stato: /conclus/i.test(str(r.Stato)) ? 'conclusa' : 'aperta',
+      data: normDate(r.Data), agg: Number(r.Aggiornato) || 0
+    });
+  }
+  return rep;
+}
+
+async function readFile(name) {
+  try {
+    const fh = await S.dir.getFileHandle(name);
+    const f = await fh.getFile();
+    if (f.size === 0) return { wb: null, stamp: f.lastModified };
+    return { wb: XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: true }), stamp: f.lastModified };
+  } catch (e) {
+    if (e.name === 'NotFoundError') return { wb: null, stamp: null };
+    throw e;
+  }
+}
+async function writeFile(name, wb) {
+  const fh = await S.dir.getFileHandle(name, { create: true });
+  const data = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const w = await fh.createWritable();
+  await w.write(new Blob([data]));
+  await w.close();
+  return (await fh.getFile()).lastModified;
+}
+
+// ============================================================
+// CARTELLA CONDIVISA E LETTURA DEI REGISTRI
+// ============================================================
+async function scegliCartella() {
+  if (!window.showDirectoryPicker) { toast('Questo browser non può aprire una cartella: usa Chrome o Edge.', 'error'); return; }
+  try {
+    const dir = await window.showDirectoryPicker({ id: 'registro-produzione', mode: 'readwrite' });
+    S.dir = dir; S.needsPermission = false;
+    await idbSet('dir', dir);
+    await caricaTutto();
+  } catch (e) {
+    if (e.name !== 'AbortError') toast('Cartella non accessibile: ' + e.message, 'error');
+  }
+}
+async function riconnettiCartella() {
+  try {
+    const p = await S.dir.requestPermission({ mode: 'readwrite' });
+    if (p === 'granted') { S.needsPermission = false; await caricaTutto(); }
+    else toast('Permesso negato: senza accesso alla cartella non posso leggere i registri.', 'error');
+  } catch (e) { toast('Errore: ' + e.message, 'error'); }
+}
+
+async function caricaConfig() {
+  const { wb, stamp } = await readFile(CONFIG_FILE);
+  S.cfg = wb ? parseConfig(wb) : null;
+  S.cfgStamp = stamp;
+}
+// Toglie i doppioni dentro un registro: stessa giornata (o settimana) e stessa linea
+// scritte più volte, tiene la versione più recente.
+function deduplica(rep) {
+  const perChiave = (lista, chiave) => {
+    const m = new Map();
+    for (const r of lista) {
+      const k = chiave(r);
+      if (!m.has(k) || (r.agg || 0) > (m.get(k).agg || 0)) m.set(k, r);
+    }
+    return [...m.values()];
+  };
+  rep.giornaliero = perChiave(rep.giornaliero, r => `${r.data}|${r.reparto}|${r.linea}`);
+  rep.settimanale = perChiave(rep.settimanale, r => `${r.lunedi}|${r.reparto}|${r.linea}`);
+  const az = new Map();
+  for (const a of rep.azioni) if (!az.has(a.id) || (a.agg || 0) > (az.get(a.id).agg || 0)) az.set(a.id, a);
+  rep.azioni = [...az.values()];
+  return rep;
+}
+
+async function caricaRegistri() {
+  const out = [], estranei = [];
+  // I registri ufficiali sono quelli dichiarati in Config.xlsx. Ogni altro file Report_*.xlsx
+  // (in genere una copia in conflitto di OneDrive) viene segnalato ma non letto, altrimenti
+  // le stesse segnalazioni comparirebbero più volte.
+  const attesi = new Map((S.cfg ? S.cfg.professionals : []).map(p => [p.file.toLowerCase(), p]));
+  for await (const entry of S.dir.values()) {
+    if (entry.kind !== 'file' || !/^ReportProd_.+\.xlsx$/i.test(entry.name)) continue;
+    const atteso = attesi.get(entry.name.toLowerCase());
+    if (!atteso) {
+      let quando = null;
+      try { quando = (await entry.getFile()).lastModified; } catch (e) {}
+      estranei.push({ file: entry.name, quando });
+      continue;
+    }
+    try {
+      const f = await entry.getFile();
+      const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: true });
+      const info = rowsOf(wb, 'Info');
+      const prof = str((info.find(r => str(r.Chiave) === 'Professional') || {}).Valore) || atteso.nome;
+      out.push({ file: entry.name, prof, rep: deduplica(parseReport(wb)) });
+    } catch (e) {
+      out.push({ file: entry.name, prof: atteso.nome, errore: e.message, rep: emptyReport() });
+    }
+  }
+  out.sort((a, b) => a.prof.localeCompare(b.prof, 'it'));
+  S.registri = out;
+  S.estranei = estranei;
+  S.lettura = Date.now();
+}
+async function caricaTutto() {
+  try {
+    await caricaConfig();
+    render();
+    if (S.cfg) { await caricaRegistri(); }
+  } catch (e) {
+    toast('Errore di lettura: ' + e.message, 'error');
+  }
+  render();
+}
+async function ricarica() {
+  if (!S.dir || !S.cfg) return;
+  document.getElementById('stato-lettura').textContent = 'Lettura in corso…';
+  try {
+    await caricaConfig();
+    await caricaRegistri();
+    render();
+    toast('Registri aggiornati.');
+  } catch (e) { toast('Errore di lettura: ' + e.message, 'error'); }
+}
+
+// Recupera dalle copie di conflitto quello che manca nei registri ufficiali.
+// Aggiunge solo ciò che non c'è: non sovrascrive mai un testo esistente.
+// Un registro risulta in uso se la sua presenza è stata rinnovata da poco
+async function registroInUso(prof) {
+  try {
+    const fh = await S.dir.getFileHandle('Attivo_' + prof.file.replace(/\.xlsx$/i, '') + '.json');
+    const d = JSON.parse(await (await fh.getFile()).text());
+    return !!(d && d.ts && Date.now() - d.ts < 5 * 60 * 1000);
+  } catch (e) { return false; }
+}
+
+async function recuperaEstranei() {
+  const estranei = S.estranei || [];
+  if (!estranei.length) return;
+  if (!confirm(`Leggo ${estranei.length} file non riconosciuti e aggiungo ai registri ufficiali solo le annotazioni mancanti. I testi già presenti non vengono toccati. Procedo?`)) return;
+
+  const perFile = new Map();   // file ufficiale → { prof, rep, aggiunte }
+  const inUso = [];            // registri aperti altrove, saltati per sicurezza
+  const diversi = [];          // stessa giornata/settimana con testo diverso: decidi tu
+  let letti = 0, saltati = [];
+
+  for (const e of estranei) {
+    let wb;
+    try { wb = XLSX.read(await (await S.dir.getFileHandle(e.file)).getFile().then(f => f.arrayBuffer()), { type: 'array', cellDates: true }); }
+    catch (err) { saltati.push(e.file); continue; }
+    const info = rowsOf(wb, 'Info');
+    const nome = str((info.find(r => str(r.Chiave) === 'Professional') || {}).Valore);
+    const idProf = str((info.find(r => str(r.Chiave) === 'ProfessionalID') || {}).Valore);
+    const prof = S.cfg.professionals.find(p => p.id === idProf) ||
+                 S.cfg.professionals.find(p => p.nome.toLowerCase() === nome.toLowerCase());
+    if (!prof) { saltati.push(e.file); continue; }
+    letti++;
+
+    // Se quel registro è aperto su una postazione, non lo tocco: scriverebbe in contemporanea
+    if (!perFile.has(prof.file) && await registroInUso(prof)) {
+      inUso.push(prof.nome);
+      continue;
+    }
+    if (!perFile.has(prof.file)) {
+      const { wb: wbUff } = await readFile(prof.file);
+      perFile.set(prof.file, { prof, rep: wbUff ? deduplica(parseReport(wbUff)) : emptyReport(), aggiunte: 0 });
+    }
+    const target = perFile.get(prof.file);
+    const copia = parseReport(wb);
+
+    const confronta = (lista, esistenti, chiave, testo) => {
+      for (const r of lista) {
+        const k = chiave(r);
+        const gia = esistenti.find(x => chiave(x) === k);
+        if (!gia) { esistenti.push(r); target.aggiunte++; continue; }
+        const nuovo = testo(r).trim(), vecchio = testo(gia).trim();
+        if (nuovo && nuovo !== vecchio && !vecchio.includes(nuovo)) {
+          diversi.push({ prof: prof.nome, file: e.file, chiave: k, testo: nuovo });
+        }
+      }
+    };
+    confronta(copia.giornaliero, target.rep.giornaliero, r => `${r.data}|${r.reparto}|${r.linea}`, r => r.testo);
+    confronta(copia.settimanale, target.rep.settimanale, r => `${r.lunedi}|${r.reparto}|${r.linea}`, r => `${r.riscontrati}\n${r.presenti}`);
+    for (const a of copia.azioni) {
+      if (!a.testo.trim()) continue;
+      const gia = target.rep.azioni.find(x => x.id === a.id ||
+        (x.lunedi === a.lunedi && x.reparto === a.reparto && x.linea === a.linea && x.testo.trim() === a.testo.trim()));
+      if (!gia) { target.rep.azioni.push(a); target.aggiunte++; }
+    }
+  }
+
+  let scritti = 0, totale = 0;
+  for (const [file, t] of perFile) {
+    if (t.aggiunte === 0) continue;
+    try { await writeFile(file, buildReportWb(t.rep, t.prof)); scritti++; totale += t.aggiunte; }
+    catch (err) { toast(`Non riesco a scrivere ${file}: ${err.message}`, 'error'); }
+  }
+
+  S.recupero = {
+    quando: Date.now(), letti, scritti, totale, saltati, diversi, inUso: [...new Set(inUso)]
+  };
+  await caricaRegistri();
+  render();
+  toast(totale
+    ? `Recuperate ${totale} annotazioni in ${scritti} ${scritti === 1 ? 'registro' : 'registri'}.`
+    : 'Nessuna annotazione mancante: le copie non contengono nulla di nuovo.');
+}
+
+// ============================================================
+// DATI
+// ============================================================
+function categoriaAttiva() { return CATEGORIE.find(c => c.id === S.reparto) || CATEGORIE[0]; }
+function lineeVisibili() {
+  const base = S.cfg ? [...S.cfg.linee] : [];
+  // "Varie" non è un impianto censito, ma i professional ci scrivono: la mostro in coda
+  if (!base.some(l => l.linea === LINEA_VARIE)) base.push({ reparto: REPARTI[0], linea: LINEA_VARIE });
+  const c = categoriaAttiva();
+  return base.filter(l => c.test(l.linea) && !S.escluse.has(`${l.reparto}|${l.linea}`));
+}
+function professionalDiLinea(l) {
+  if (!S.cfg) return '';
+  const a = S.cfg.affidamenti.find(x => x.reparto === l.reparto && x.linea === l.linea);
+  const p = a && S.cfg.professionals.find(x => x.id === a.profId);
+  return p ? p.nome : '';
+}
+function salvaEscluse() { try { localStorage.setItem('sv_p_escluse', JSON.stringify([...S.escluse])); } catch (e) {} }
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  const main = document.getElementById('main');
+  document.getElementById('btn-reload').hidden = !(S.dir && S.cfg);
+  document.getElementById('stato-lettura').textContent =
+    S.lettura ? `${S.registri.length} registri, letti alle ${hhmm(S.lettura)}` : '';
+
+  if (!S.dir) {
+    main.innerHTML = `
+      <section class="screen">
+        <h2>Collega la cartella condivisa</h2>
+        <p>È la cartella di SharePoint sincronizzata con OneDrive in cui i professional tengono il loro registro.</p>
+        <button class="btn primary" id="btn-dir">Scegli la cartella</button>
+        <p class="hint" style="margin-top:14px">Serve Chrome o Edge. La scelta viene ricordata.</p>
+      </section>`;
+    return;
+  }
+  if (S.needsPermission) {
+    main.innerHTML = `
+      <section class="screen">
+        <h2>Riprendi la lettura</h2>
+        <p>Per sicurezza il browser chiede il permesso sulla cartella <b>${escapeHtml(S.dir.name)}</b> a ogni nuova apertura: è una conferma che deve partire da un clic.</p>
+        <p class="hint">Premi qui sotto, o clicca in un punto qualsiasi della pagina, e poi <b>Consenti</b>.</p>
+        <button class="btn primary" id="btn-reconnect">Riprendi</button>
+        <button class="btn ghost" id="btn-dir">Scegli un'altra cartella</button>
+      </section>`;
+    const scorciatoia = (ev) => {
+      if (ev.target.closest && ev.target.closest('#btn-dir')) return;
+      document.removeEventListener('click', scorciatoia, true);
+      document.removeEventListener('keydown', scorciatoia, true);
+      riconnettiCartella();
+    };
+    setTimeout(() => {
+      document.addEventListener('click', scorciatoia, true);
+      document.addEventListener('keydown', scorciatoia, true);
+    }, 0);
+    return;
+  }
+  if (!S.cfg) {
+    main.innerHTML = `
+      <section class="screen">
+        <h2>Configurazione da creare</h2>
+        <p>Nella cartella <b>${escapeHtml(S.dir.name)}</b> non c'è ancora <b>Config.xlsx</b>. Aprila da <b>Impostazioni</b>: inserisci professional, linee e assegnazioni, oppure importali dall'app Monitoraggio Linee.</p>
+        <button class="btn primary" id="btn-open-settings">Apri impostazioni</button>
+        <button class="btn ghost" id="btn-dir">Scegli un'altra cartella</button>
+      </section>`;
+    return;
+  }
+
+  const linee = lineeVisibili();
+  const baseLinee = [...(S.cfg.linee || [])];
+  if (!baseLinee.some(l => l.linea === LINEA_VARIE)) baseLinee.push({ reparto: REPARTI[0], linea: LINEA_VARIE });
+  const tutteDelReparto = baseLinee.filter(l => categoriaAttiva().test(l.linea)).length;
+  const profs = S.registri ? [...new Set(S.registri.map(r => r.prof))] : [];
+
+  const barra = `
+    <div class="sup-bar">
+      <div class="seg">
+        <button data-tab="giorno" class="${S.tab === 'giorno' ? 'on' : ''}">Report giornalieri</button>
+        <button data-tab="linea" class="${S.tab === 'linea' ? 'on' : ''}">Per linea</button>
+        <button data-tab="settimana" class="${S.tab === 'settimana' ? 'on' : ''}">Analisi settimanali</button>
+        <button data-tab="storico" class="${S.tab === 'storico' ? 'on' : ''}">Storico azioni</button>
+      </div>
+      <div class="seg">
+        ${CATEGORIE.map(c => `<button data-reparto="${c.id}" class="${S.reparto === c.id ? 'on' : ''}">${c.label}</button>`).join('')}
+      </div>
+      ${S.tab === 'linea'
+        ? `<select id="sel-linea" aria-label="Linea">
+             ${linee.map(l => `<option value="${escapeHtml(l.reparto + '|' + l.linea)}" ${lineaScelta() && lineaScelta().linea === l.linea && lineaScelta().reparto === l.reparto ? 'selected' : ''}>${escapeHtml(l.linea)} · ${escapeHtml(l.reparto)}</option>`).join('')}
+           </select>`
+        : `<button class="btn small" id="btn-linee">Impianti (${linee.length}/${tutteDelReparto})</button>`}
+      <select id="sel-prof-filtro" aria-label="Professional">
+        <option value="">Tutti i professional</option>
+        ${profs.map(p => `<option value="${escapeHtml(p)}" ${S.prof === p ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}
+      </select>
+      ${S.tab === 'linea' ? '' : S.tab === 'storico'
+        ? `<div class="seg">
+             ${[['aperta', 'Aperte'], ['conclusa', 'Concluse'], ['tutte', 'Tutte']].map(([v, n]) =>
+               `<button data-stato="${v}" class="${S.stFiltro === v ? 'on' : ''}">${n}</button>`).join('')}
+           </div>`
+        : `<label class="check"><input type="checkbox" id="chk-solo" ${S.soloContenuto ? 'checked' : ''}> Solo impianti con contenuto</label>`}
+    </div>`;
+
+  if (!S.registri) { main.innerHTML = barra + '<section class="screen"><p>Lettura dei registri…</p></section>'; return; }
+
+  const periodo = (S.tab === 'storico' || S.tab === 'linea') ? '' : S.tab === 'giorno'
+    ? `<div class="period">
+         <button class="nav" data-day="-1" aria-label="Giorno precedente">‹</button>
+         <div class="current">${GIORNI[new Date(S.giorno + 'T00:00:00').getDay()]} ${fmtDate(S.giorno)}<small>${S.giorno === todayISO() ? 'oggi' : '&nbsp;'}</small></div>
+         <button class="nav" data-day="1" aria-label="Giorno successivo">›</button>
+         ${S.giorno === todayISO() ? '' : '<button class="btn small" data-day="today">Torna a oggi</button>'}
+       </div>`
+    : `<div class="period">
+         <button class="nav" data-week="-1" aria-label="Settimana precedente">‹</button>
+         <div class="current">WK ${isoWeek(S.lunedi)}<small>${fmtDate(S.lunedi)} – ${fmtDate(addDays(S.lunedi, 6))}${S.lunedi === defaultLunedi() ? ', settimana da analizzare' : ''}</small></div>
+         <button class="nav" data-week="1" aria-label="Settimana successiva">›</button>
+         ${S.lunedi === defaultLunedi() ? '' : '<button class="btn small" data-week="default">Settimana da analizzare</button>'}
+       </div>`;
+
+  const errori = S.registri.filter(r => r.errore);
+  const estranei = S.estranei || [];
+  const avviso = estranei.length ? `
+    <div class="sup-avviso">
+      <b>${estranei.length} ${estranei.length === 1 ? 'file non riconosciuto' : 'file non riconosciuti'} nella cartella</b>, quindi non ${estranei.length === 1 ? 'letto' : 'letti'}:
+      ${estranei.map(e => escapeHtml(e.file) + (e.quando ? ` <span class="q">(${fmtDate(isoOf(new Date(e.quando)))})</span>` : '')).join(', ')}.
+      Di solito sono copie che OneDrive crea quando lo stesso registro viene salvato da due postazioni.
+      <div class="sup-avviso-azioni">
+        <button class="btn small" id="btn-recupera">Recupera quello che manca</button>
+        <span class="q">Aggiunge ai registri ufficiali solo le annotazioni assenti, senza sovrascrivere nulla. Le copie restano nella cartella: eliminale tu dopo il controllo.</span>
+      </div>
+      ${S.recupero ? `<div class="sup-recupero">
+        Ultimo recupero: ${S.recupero.totale} annotazioni aggiunte da ${S.recupero.letti} file.
+        ${S.recupero.saltati.length ? `Non collegabili a un professional: ${S.recupero.saltati.map(escapeHtml).join(', ')}.` : ''}
+        ${S.recupero.inUso && S.recupero.inUso.length ? `<br>Registri aperti su una postazione, saltati: <b>${S.recupero.inUso.map(escapeHtml).join(', ')}</b>. Riprova quando sono chiusi.` : ''}
+        ${S.recupero.diversi.length ? `<br><b>${S.recupero.diversi.length} testi diversi sulla stessa giornata</b>, da valutare a mano: ${
+          S.recupero.diversi.slice(0, 6).map(d => `${escapeHtml(d.prof)} · ${escapeHtml(d.chiave.replace(/\|/g, ' '))}`).join(' · ')}${S.recupero.diversi.length > 6 ? '…' : ''}` : ''}
+      </div>` : ''}
+    </div>` : '';
+  const vuoto = S.tab === 'storico'
+    ? 'Nessuna azione con i filtri scelti.'
+    : 'Nessun contenuto per il periodo e i filtri scelti.';
+  const blocchi = S.tab === 'linea' ? bloccoPerLinea() : S.tab === 'storico'
+    ? listaAzioni(linee)
+    : linee.map(l => S.tab === 'giorno' ? bloccoGiorno(l) : bloccoSettimana(l)).filter(Boolean).join('');
+  main.innerHTML = barra + avviso + periodo + `<div class="register">${
+    blocchi || `<div class="sup-vuoto">${vuoto}</div>`
+  }${errori.length ? `<div class="sup-err">Registri non leggibili: ${errori.map(e => escapeHtml(e.file)).join(', ')}</div>` : ''}</div>`;
+}
+
+function gutter(l, extra) {
+  // Nomi lunghi come "Sili Pasta Corta exFG1": il corpo si adatta alla parola più lunga
+  const maxParola = Math.max(...l.linea.split(/\s+/).map(w => w.length));
+  const cls = (maxParola > 9 || l.linea.length > 20) ? 'code mini'
+            : (maxParola > 6 || l.linea.length > 10) ? 'code small' : 'code';
+  return `<div class="gutter"><div class="${cls}">${escapeHtml(l.linea)}</div>${extra || ''}</div>`;
+}
+
+const GIORNI_STORICO = 21;   // giorni di report mostrati nella scheda "Per linea"
+
+function lineaScelta() {
+  const linee = lineeVisibili();
+  if (!linee.length) return null;
+  return linee.find(l => `${l.reparto}|${l.linea}` === S.linea) || linee[0];
+}
+
+// Storico completo di una sola linea: azioni aperte, report giornalieri, analisi settimanali
+function bloccoPerLinea() {
+  const l = lineaScelta();
+  if (!l) return '<div class="sup-vuoto">Nessun impianto disponibile con i filtri scelti.</div>';
+  const dal = addDays(todayISO(), -GIORNI_STORICO);
+  const aperte = [], giorni = [], settimane = [];
+
+  for (const reg of S.registri) {
+    if (S.prof && reg.prof !== S.prof) continue;
+    const mia = (x) => x.reparto === l.reparto && x.linea === l.linea;
+    for (const a of reg.rep.azioni)
+      if (mia(a) && a.stato === 'aperta' && a.testo.trim()) aperte.push({ ...a, prof: reg.prof });
+    for (const g of reg.rep.giornaliero)
+      if (mia(g) && g.data >= dal && g.testo.trim()) giorni.push({ ...g, prof: reg.prof });
+    for (const w of reg.rep.settimanale)
+      if (mia(w) && w.lunedi >= addDays(dal, -7) && (w.riscontrati + w.presenti).trim()) settimane.push({ ...w, prof: reg.prof });
+  }
+  aperte.sort((a, b) => a.lunedi.localeCompare(b.lunedi));
+  giorni.sort((a, b) => b.data.localeCompare(a.data));
+  settimane.sort((a, b) => b.lunedi.localeCompare(a.lunedi));
+
+  const titolare = professionalDiLinea(l);
+  return `
+    <article class="entry">
+      ${gutter(l, titolare ? `<div class="sup-titolare">${escapeHtml(titolare)}</div>` : '')}
+      <div class="notes">
+        <div class="sup-sez big">Azioni aperte${aperte.length ? ` (${aperte.length})` : ''}</div>
+        ${aperte.length ? `<ul class="sup-azioni">${aperte.map(a => {
+            const scaduta = a.data && a.data < todayISO();
+            return `<li><span class="wk">WK ${isoWeek(a.lunedi)}</span> ${escapeHtml(a.testo)}
+              ${a.data ? `<span class="sup-data ${scaduta ? 'scaduta' : ''}">${fmtDate(a.data)}</span>` : ''}
+              <span class="sup-data">· ${escapeHtml(a.prof)}</span></li>`;
+          }).join('')}</ul>`
+          : '<div class="empty-line">Nessuna azione aperta su questa linea.</div>'}
+
+        <div class="sup-sez big">Report degli ultimi ${GIORNI_STORICO} giorni</div>
+        ${giorni.length ? giorni.map(g => {
+          const d = new Date(g.data + 'T00:00:00');
+          return `<div class="sup-voce">
+            <div class="sup-chi">${GIORNI[d.getDay()]} ${fmtDate(g.data)} · ${escapeHtml(g.prof)}</div>
+            <div class="sup-testo">${escapeHtml(g.testo)}</div>
+          </div>`;
+        }).join('') : '<div class="empty-line">Nessun report nel periodo.</div>'}
+
+        <div class="sup-sez big">Analisi settimanali</div>
+        ${settimane.length ? settimane.map(w => `
+          <div class="sup-voce">
+            <div class="sup-chi">WK ${isoWeek(w.lunedi)} · ${fmtDate(w.lunedi)} – ${fmtDate(addDays(w.lunedi, 6))} · ${escapeHtml(w.prof)}</div>
+            ${w.riscontrati.trim() ? `<div class="sup-sez">Problemi riscontrati</div><div class="sup-testo">${escapeHtml(w.riscontrati)}</div>` : ''}
+            ${w.presenti.trim() ? `<div class="sup-sez">Ancora presenti</div><div class="sup-testo">${escapeHtml(w.presenti)}</div>` : ''}
+          </div>`).join('') : '<div class="empty-line">Nessuna analisi nel periodo.</div>'}
+      </div>
+    </article>`;
+}
+
+function bloccoGiorno(l) {
+  const voci = [];
+  for (const reg of S.registri) {
+    if (S.prof && reg.prof !== S.prof) continue;
+    for (const r of reg.rep.giornaliero) {
+      if (r.data === S.giorno && r.reparto === l.reparto && r.linea === l.linea && r.testo.trim()) {
+        voci.push({ prof: reg.prof, testo: r.testo });
+      }
+    }
+  }
+  if (!voci.length && S.soloContenuto) return '';
+  const titolare = professionalDiLinea(l);
+  return `
+    <article class="entry">
+      ${gutter(l, titolare ? `<div class="sup-titolare">${escapeHtml(titolare)}</div>` : '')}
+      <div class="notes">
+        ${voci.length ? voci.map(v => `
+          <div class="sup-voce">
+            <div class="sup-chi">${escapeHtml(v.prof)}</div>
+            <div class="sup-testo">${escapeHtml(v.testo)}</div>
+          </div>`).join('') : '<div class="empty-line">Nessun report per questa giornata.</div>'}
+      </div>
+    </article>`;
+}
+
+function bloccoSettimana(l) {
+  const parti = [];
+  for (const reg of S.registri) {
+    if (S.prof && reg.prof !== S.prof) continue;
+    const r = reg.rep.settimanale.find(x => x.lunedi === S.lunedi && x.reparto === l.reparto && x.linea === l.linea);
+    const az = reg.rep.azioni.filter(x => x.lunedi === S.lunedi && x.reparto === l.reparto && x.linea === l.linea && x.testo.trim());
+    const aperte = reg.rep.azioni.filter(x => x.lunedi < S.lunedi && x.reparto === l.reparto && x.linea === l.linea && x.stato === 'aperta' && x.testo.trim());
+    if (!r && !az.length && !aperte.length) continue;
+    parti.push({ prof: reg.prof, r, az, aperte });
+  }
+  if (!parti.length && S.soloContenuto) return '';
+  const titolare = professionalDiLinea(l);
+  return `
+    <article class="entry">
+      ${gutter(l, titolare ? `<div class="sup-titolare">${escapeHtml(titolare)}</div>` : '')}
+      <div class="notes">
+        ${parti.length ? parti.map(p => `
+          <div class="sup-voce">
+            <div class="sup-chi">${escapeHtml(p.prof)}</div>
+            ${p.r && p.r.riscontrati.trim() ? `<div class="sup-sez">Problemi riscontrati</div><div class="sup-testo">${escapeHtml(p.r.riscontrati)}</div>` : ''}
+            ${p.r && p.r.presenti.trim() ? `<div class="sup-sez">Ancora presenti</div><div class="sup-testo">${escapeHtml(p.r.presenti)}</div>` : ''}
+            ${p.az.length ? `<div class="sup-sez">Azioni</div><ul class="sup-azioni">${p.az.map(a => `
+              <li><span class="sup-stato ${a.stato === 'conclusa' ? 'ok' : ''}">${a.stato === 'conclusa' ? 'Conclusa' : 'Aperta'}</span>${escapeHtml(a.testo)}${a.data ? ` <span class="sup-data">${fmtDate(a.data)}</span>` : ''}</li>`).join('')}</ul>` : ''}
+            ${p.aperte.length ? `<div class="sup-sez">Ancora aperte da settimane precedenti</div><ul class="sup-azioni">${p.aperte.map(a => `
+              <li><span class="wk">WK ${isoWeek(a.lunedi)}</span> ${escapeHtml(a.testo)}${a.data ? ` <span class="sup-data">${fmtDate(a.data)}</span>` : ''}</li>`).join('')}</ul>` : ''}
+          </div>`).join('') : '<div class="empty-line">Nessuna analisi per questa settimana.</div>'}
+      </div>
+    </article>`;
+}
+
+// Storico di tutte le azioni, di tutti i professional. Sola lettura.
+function listaAzioni(linee) {
+  const ammesse = new Set(linee.map(l => `${l.reparto}|${l.linea}`));
+  const oggi = todayISO();
+  const righe = [];
+  for (const reg of S.registri) {
+    if (S.prof && reg.prof !== S.prof) continue;
+    for (const a of reg.rep.azioni) {
+      if (!a.testo.trim() || !ammesse.has(`${a.reparto}|${a.linea}`)) continue;
+      if (S.stFiltro !== 'tutte' && a.stato !== S.stFiltro) continue;
+      righe.push({ ...a, prof: reg.prof });
+    }
+  }
+  // Le aperte dalla più vecchia, le altre dalla più recente
+  righe.sort((x, y) => S.stFiltro === 'aperta'
+    ? x.lunedi.localeCompare(y.lunedi) || x.linea.localeCompare(y.linea, 'it', { numeric: true })
+    : y.lunedi.localeCompare(x.lunedi) || x.linea.localeCompare(y.linea, 'it', { numeric: true }));
+  if (righe.length === 0) return '';
+
+  const aperte = righe.filter(r => r.stato === 'aperta').length;
+  const scadute = righe.filter(r => r.stato === 'aperta' && r.data && r.data < oggi).length;
+  return `
+    <div class="az-riepilogo">${righe.length} ${righe.length === 1 ? 'azione' : 'azioni'}` +
+      `${S.stFiltro === 'tutte' ? ` · ${aperte} aperte` : ''}` +
+      `${scadute ? ` · <b class="az-late">${scadute} oltre la data prevista</b>` : ''}</div>` +
+    `<div class="az-lista">` + righe.map(a => {
+      const late = a.stato === 'aperta' && a.data && a.data < oggi;
+      return `
+        <div class="az-riga ${a.stato === 'conclusa' ? 'done' : ''} ${late ? 'late' : ''}">
+          <span class="wk">WK ${isoWeek(a.lunedi)}</span>
+          <span class="az-linea">${escapeHtml(a.linea)}<em>${escapeHtml(a.reparto)}</em></span>
+          <span class="az-testo">${escapeHtml(a.testo)}</span>
+          <span class="az-prof">${escapeHtml(a.prof)}</span>
+          <span class="az-data">${a.data ? fmtDate(a.data) : '—'}</span>
+          <span class="sup-stato ${a.stato === 'conclusa' ? 'ok' : ''}">${a.stato === 'conclusa' ? 'Conclusa' : 'Aperta'}</span>
+        </div>`;
+    }).join('') + `</div>`;
+}
+
+function renderLineeModal() {
+  const tutte = S.cfg ? [...S.cfg.linee] : [];
+  if (!tutte.some(l => l.linea === LINEA_VARIE)) tutte.push({ reparto: REPARTI[0], linea: LINEA_VARIE });
+  const attive = tutte.filter(l => !S.escluse.has(`${l.reparto}|${l.linea}`)).length;
+  document.getElementById('lin-count').textContent = `${attive} di ${tutte.length} selezionate`;
+  const perRep = {};
+  for (const l of tutte) (perRep[l.reparto] = perRep[l.reparto] || []).push(l);
+  document.getElementById('lin-list').innerHTML = Object.keys(perRep).sort().map(rp => `
+    <div class="set-section" style="padding-top:0">
+      <h3>${escapeHtml(rp)}</h3>
+      <div class="sl-items">
+        ${perRep[rp].map(l => {
+          const k = `${l.reparto}|${l.linea}`;
+          const on = !S.escluse.has(k);
+          return `<label class="sl-item ${on ? 'on' : ''}"><input type="checkbox" data-linea-key="${escapeHtml(k)}" ${on ? 'checked' : ''}><span>${escapeHtml(l.linea)}</span></label>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// ============================================================
+// IMPOSTAZIONI
+// ============================================================
+function mostraImpostazioni() {
+  if (!S.dir) { toast('Prima scegli la cartella condivisa.', 'error'); return; }
+  S.cfgDraft = JSON.parse(JSON.stringify(S.cfg || { professionals: [], linee: [], affidamenti: [] }));
+  renderImpostazioni();
+  openModal('modal-settings');
+}
+
+function renderImpostazioni() {
+  const c = S.cfgDraft;
+  const profs = [...c.professionals].sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+  const assegnata = (l) => c.affidamenti.find(a => a.reparto === l.reparto && a.linea === l.linea);
+  const libere = c.linee.filter(l => !assegnata(l)).length;
+
+  document.getElementById('settings-body').innerHTML = `
+    <div class="set-section">
+      <h3>Cartella</h3>
+      <p>I registri si trovano in <b>${escapeHtml(S.dir.name)}</b>.</p>
+      <div class="row-inline">
+        <button class="btn small ghost" id="btn-dir">Cambia cartella</button>
+        <button class="btn small" id="btn-import">Importa dall'app Monitoraggio Linee</button>
+      </div>
+      <p class="hint" style="margin-top:8px">L'importazione legge professional, linee e assegnazioni dal file dati dell'app Monitoraggio e li aggiunge a quelli presenti qui. Non cancella nulla.</p>
+    </div>
+
+    <div class="set-section">
+      <h3>Professional</h3>
+      <p>Il nome si può correggere in qualsiasi momento: il registro resta collegato allo stesso file.
+      Il PIN serve al professional per aprire il proprio registro, e gli viene chiesto una volta sola per postazione.</p>
+      ${profs.map(p => `
+        <div class="prof-row">
+          <input type="text" value="${escapeHtml(p.nome)}" data-prof-nome="${escapeHtml(p.id)}" aria-label="Nome">
+          <button class="btn small ${p.pin ? '' : 'ghost'}" data-prof-pin="${escapeHtml(p.id)}"
+            title="${p.pin ? 'PIN impostato: premi per cambiarlo o toglierlo' : 'Senza PIN il registro è aperto a chiunque'}">${p.pin ? '🔒 PIN attivo' : 'Imposta PIN'}</button>
+          <button class="icon-del" data-prof-del="${escapeHtml(p.id)}" title="Rimuovi professional" aria-label="Rimuovi">×</button>
+        </div>`).join('') || '<p class="hint">Nessun professional.</p>'}
+      <div class="row-inline" style="margin-top:10px">
+        <input type="text" id="new-prof" placeholder="Nome e cognome">
+        <button class="btn small" id="btn-add-prof">Aggiungi professional</button>
+      </div>
+    </div>
+
+    <div class="set-section">
+      <h3>Linee</h3>
+      <p>Gli impianti di produzione seguiti dai professional.</p>
+      ${REPARTI.map(rep => `
+        <div><b>${rep}</b></div>
+        <div class="chips">
+          ${c.linee.filter(l => l.reparto === rep).map(l => `<span class="chip">${escapeHtml(l.linea)}<button data-lin-del="${escapeHtml(rep + '|' + l.linea)}" title="Rimuovi linea" aria-label="Rimuovi ${escapeHtml(l.linea)}">×</button></span>`).join('') || '<span class="hint">Nessuna linea.</span>'}
+        </div>`).join('')}
+      <div class="row-inline">
+        <select id="new-lin-rep">${REPARTI.map(r => `<option>${r}</option>`).join('')}</select>
+        <input type="text" id="new-lin" placeholder="Es. L27">
+        <button class="btn small" id="btn-add-lin">Aggiungi linea</button>
+      </div>
+    </div>
+
+    <div class="set-section">
+      <h3>Assegnazioni</h3>
+      <p>${libere ? `${libere} ${libere === 1 ? 'linea non assegnata' : 'linee non assegnate'}, evidenziate in rosso.` : 'Tutte le linee sono assegnate.'} Nel report giornaliero ogni professional può comunque scrivere anche su linee non sue.</p>
+      <div class="assign-wrap">
+        <table class="assign">
+          <thead><tr><th>Linea</th><th>Reparto</th><th>Professional</th></tr></thead>
+          <tbody>
+            ${c.linee.map(l => {
+              const a = assegnata(l);
+              return `<tr class="${a ? '' : 'unassigned'}">
+                <td>${escapeHtml(l.linea)}</td>
+                <td>${escapeHtml(l.reparto)}</td>
+                <td><select data-assign="${escapeHtml(l.reparto + '|' + l.linea)}">
+                  <option value="">— non assegnata —</option>
+                  ${profs.map(p => `<option value="${escapeHtml(p.id)}" ${a && a.profId === p.id ? 'selected' : ''}>${escapeHtml(p.nome)}</option>`).join('')}
+                </select></td>
+              </tr>`;
+            }).join('') || '<tr><td colspan="3" class="hint">Aggiungi prima le linee.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+document.getElementById('settings-body').addEventListener('click', (ev) => {
+  const t = ev.target.closest('button');
+  if (!t) return;
+  const c = S.cfgDraft;
+  if (t.id === 'btn-add-prof') {
+    const nome = document.getElementById('new-prof').value.trim();
+    if (!nome) return;
+    if (c.professionals.some(p => p.nome.toLowerCase() === nome.toLowerCase())) { toast('Professional già presente.', 'error'); return; }
+    let file = `${PREFISSO_FILE}${slug(nome)}.xlsx`, n = 2;
+    while (c.professionals.some(p => p.file === file)) file = `${PREFISSO_FILE}${slug(nome)}_${n++}.xlsx`;
+    c.professionals.push({ id: uid(), nome, file });
+    renderImpostazioni();
+  } else if (t.dataset.profDel) {
+    const p = c.professionals.find(x => x.id === t.dataset.profDel);
+    if (!p || !confirm(`Rimuovere ${p.nome}? Le sue linee tornano non assegnate. Il file ${p.file} resta nella cartella.`)) return;
+    c.professionals = c.professionals.filter(x => x.id !== p.id);
+    c.affidamenti = c.affidamenti.filter(a => a.profId !== p.id);
+    renderImpostazioni();
+  } else if (t.id === 'btn-add-lin') {
+    const reparto = document.getElementById('new-lin-rep').value;
+    const linea = document.getElementById('new-lin').value.trim().toUpperCase();
+    if (!linea) return;
+    if (c.linee.some(l => l.reparto === reparto && l.linea === linea)) { toast('Linea già presente.', 'error'); return; }
+    c.linee.push({ reparto, linea });
+    c.linee.sort(sortLinee);
+    renderImpostazioni();
+  } else if (t.dataset.linDel) {
+    const [reparto, linea] = t.dataset.linDel.split('|');
+    c.linee = c.linee.filter(l => !(l.reparto === reparto && l.linea === linea));
+    c.affidamenti = c.affidamenti.filter(a => !(a.reparto === reparto && a.linea === linea));
+    renderImpostazioni();
+  } else if (t.dataset.profPin) {
+    const p = c.professionals.find(x => x.id === t.dataset.profPin);
+    if (!p) return;
+    const nuovo = prompt(p.pin
+      ? `PIN di ${p.nome}. Scrivi il nuovo PIN, oppure lascia vuoto per toglierlo.`
+      : `PIN di ${p.nome}: sarà chiesto al primo accesso su ogni postazione.`, '');
+    if (nuovo === null) return;
+    (async () => {
+      p.pin = nuovo.trim() ? await cifraPin(nuovo.trim()) : '';
+      renderImpostazioni();
+      toast(p.pin ? `PIN impostato per ${p.nome}. Ricordati di premere "Salva impostazioni".` : `PIN rimosso per ${p.nome}.`);
+    })();
+  } else if (t.id === 'btn-import') {
+    document.getElementById('file-monitoraggio').click();
+  }
+});
+document.getElementById('settings-body').addEventListener('change', (ev) => {
+  const el = ev.target, c = S.cfgDraft;
+  if (el.dataset.profNome) {
+    const p = c.professionals.find(x => x.id === el.dataset.profNome);
+    if (p && el.value.trim()) p.nome = el.value.trim();
+  } else if (el.dataset.assign) {
+    const [reparto, linea] = el.dataset.assign.split('|');
+    c.affidamenti = c.affidamenti.filter(a => !(a.reparto === reparto && a.linea === linea));
+    if (el.value) c.affidamenti.push({ profId: el.value, reparto, linea });
+    renderImpostazioni();
+  }
+});
+
+// Importa professional, linee e assegnazioni dal file dati dell'app Monitoraggio Linee
+document.getElementById('file-monitoraggio').addEventListener('change', async (ev) => {
+  const f = ev.target.files[0];
+  ev.target.value = '';
+  if (!f) return;
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+    if (!wb.Sheets['Linee'] && !wb.Sheets['Professional']) throw new Error('il file non contiene i fogli Linee e Professional dell\'app Monitoraggio');
+    const c = S.cfgDraft;
+    let nP = 0, nL = 0, nA = 0;
+    const mappaId = new Map();
+    for (const r of rowsOf(wb, 'Professional')) {
+      const idM = str(r.ID), nome = str(r.Nome);
+      if (!idM || !nome) continue;
+      let p = c.professionals.find(x => x.nome.toLowerCase() === nome.toLowerCase());
+      if (!p) {
+        let file = `${PREFISSO_FILE}${slug(nome)}.xlsx`, n = 2;
+        while (c.professionals.some(x => x.file === file)) file = `${PREFISSO_FILE}${slug(nome)}_${n++}.xlsx`;
+        p = { id: idM, nome, file, pin: '' };
+        if (c.professionals.some(x => x.id === p.id)) p.id = uid();
+        c.professionals.push(p); nP++;
+      }
+      mappaId.set(idM, p.id);
+    }
+    for (const r of rowsOf(wb, 'Linee')) {
+      const reparto = str(r.Reparto), linea = str(r.Linea).toUpperCase();
+      if (!reparto || !linea || c.linee.some(l => l.reparto === reparto && l.linea === linea)) continue;
+      c.linee.push({ reparto, linea }); nL++;
+    }
+    c.linee.sort(sortLinee);
+    for (const r of rowsOf(wb, 'Affidamenti')) {
+      const profId = mappaId.get(str(r.ProfessionalID)), reparto = str(r.Reparto), linea = str(r.Linea).toUpperCase();
+      if (!profId || !reparto || !linea) continue;
+      if (c.affidamenti.some(a => a.reparto === reparto && a.linea === linea)) continue;
+      c.affidamenti.push({ profId, reparto, linea }); nA++;
+    }
+    renderImpostazioni();
+    toast(`Importati ${nP} professional, ${nL} linee e ${nA} assegnazioni. Premi "Salva impostazioni" per confermare.`);
+  } catch (e) {
+    toast('Importazione non riuscita: ' + e.message, 'error');
+  }
+});
+
+document.getElementById('btn-save-config').addEventListener('click', async () => {
+  const c = S.cfgDraft;
+  try {
+    const esistente = await S.dir.getFileHandle(CONFIG_FILE).then(h => h.getFile()).catch(() => null);
+    if (esistente && S.cfgStamp != null && esistente.lastModified !== S.cfgStamp &&
+        !confirm('Le impostazioni sono state modificate altrove dopo che le hai aperte. Vuoi sovrascriverle con le tue?')) return;
+    S.cfgStamp = await writeFile(CONFIG_FILE, buildConfigWb(c));
+    S.cfg = JSON.parse(JSON.stringify(c));
+    closeModal('modal-settings');
+    toast('Impostazioni salvate.');
+    await caricaRegistri();
+    render();
+  } catch (e) {
+    toast('Impostazioni non salvate: ' + e.message + (/lock|NoModification/i.test(e.name) ? ' (Config.xlsx aperto in Excel?)' : ''), 'error');
+  }
+});
+
+// ============================================================
+// INTERAZIONI
+// ============================================================
+document.addEventListener('click', (ev) => {
+  const t = ev.target.closest('button');
+  if (!t) return;
+  const ds = t.dataset;
+  if (t.id === 'btn-dir') return scegliCartella();
+  if (t.id === 'btn-reconnect') return riconnettiCartella();
+  if (t.id === 'btn-settings' || t.id === 'btn-open-settings') return mostraImpostazioni();
+  if (t.id === 'btn-reload') return ricarica();
+  if (ds.close) return closeModal(ds.close);
+  if (t.id === 'btn-linee') { renderLineeModal(); return openModal('modal-linee'); }
+  if (t.id === 'btn-recupera') return recuperaEstranei();
+  if (ds.tab) { S.tab = ds.tab; localStorage.setItem('sv_p_tab', S.tab); return render(); }
+  if (ds.reparto) { S.reparto = ds.reparto; localStorage.setItem('sv_p_reparto', S.reparto); return render(); }
+  if (ds.stato) { S.stFiltro = ds.stato; localStorage.setItem('sv_p_stato', S.stFiltro); return render(); }
+  if (ds.day) { S.giorno = ds.day === 'today' ? todayISO() : addDays(S.giorno, +ds.day); return render(); }
+  if (ds.week) { S.lunedi = ds.week === 'default' ? defaultLunedi() : addDays(S.lunedi, 7 * +ds.week); return render(); }
+  if (t.id === 'lin-all' || t.id === 'lin-none') {
+    S.escluse = t.id === 'lin-all' ? new Set() : new Set(lineeVisibili().concat(S.cfg.linee || []).map(l => `${l.reparto}|${l.linea}`));
+    salvaEscluse(); renderLineeModal(); return render();
+  }
+});
+
+document.addEventListener('change', (ev) => {
+  const el = ev.target;
+  if (el.dataset.lineaKey) {
+    if (el.checked) S.escluse.delete(el.dataset.lineaKey); else S.escluse.add(el.dataset.lineaKey);
+    el.closest('.sl-item').classList.toggle('on', el.checked);
+    salvaEscluse(); renderLineeModal(); render();
+    return;
+  }
+  if (el.id === 'sel-linea') { S.linea = el.value; localStorage.setItem('sv_p_linea', S.linea); return render(); }
+  if (el.id === 'sel-prof-filtro') { S.prof = el.value; return render(); }
+  if (el.id === 'chk-solo') { S.soloContenuto = el.checked; localStorage.setItem('sv_p_solo', el.checked ? '1' : '0'); return render(); }
+});
+
+document.querySelectorAll('.modal-bg').forEach(bg => bg.addEventListener('mousedown', (e) => { if (e.target === bg) bg.classList.remove('open'); }));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal-bg.open').forEach(m => m.classList.remove('open')); });
+
+// Tornando sulla pagina rileggo i registri, se è passato più di un minuto
+window.addEventListener('focus', () => {
+  if (!S.dir || !S.cfg || document.querySelector('.modal-bg.open')) return;
+  if (S.lettura && Date.now() - S.lettura < 60000) return;
+  caricaConfig().then(caricaRegistri).then(render).catch(() => {});
+});
+
+// ============================================================
+// AVVIO
+// ============================================================
+(async function avvio() {
+  if (typeof XLSX === 'undefined') {
+    document.getElementById('main').innerHTML = '<section class="screen"><h2>Libreria Excel non caricata</h2><p>Serve la connessione a internet all\'apertura della pagina. Controlla la rete e ricarica.</p></section>';
+    return;
+  }
+  try {
+    const dir = await idbGet('dir');
+    if (dir) {
+      S.dir = dir;
+      const p = await dir.queryPermission({ mode: 'readwrite' });
+      if (p === 'granted') { await caricaTutto(); return; }
+      S.needsPermission = true;
+    }
+  } catch (e) { S.dir = null; }
+  render();
+})();
+</script>
+</body>
+</html>
